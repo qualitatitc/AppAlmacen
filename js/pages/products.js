@@ -41,6 +41,7 @@
       + '<div style="display:flex;justify-content:flex-end;align-items:flex-end;margin-top:auto"><div id="labelQr"></div></div>'
       + '</div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="WMS.closeModal(\'labelModal\')">Cerrar</button><button class="btn btn-primary" onclick="window.printLabel()">🖨️ Imprimir</button></div></div></div>';
 
+    var si = document.getElementById('productSearch');
     if (si) si.addEventListener('input', WMS.debounce(async function(e) { searchQuery = e.target.value; currentPage = 1; await renderPage(container); }, 250));
     var cf = document.getElementById('categoryFilter');
     if (cf) cf.addEventListener('change', async function(e) { categoryFilter = e.target.value; currentPage = 1; await renderPage(container); });
