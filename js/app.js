@@ -34,8 +34,14 @@
       + '<div class="sidebar-header"><div class="sidebar-logo">📦</div><div class="sidebar-brand"><span class="sidebar-brand-name">ITC Warehouse</span><span class="sidebar-brand-sub">Gestión de Almacén</span></div></div>'
       + '<nav class="sidebar-nav">'
       + '<div class="nav-section"><div class="nav-section-title">Principal</div><a href="#/dashboard" class="nav-item" data-path="/dashboard"><span class="nav-item-icon">📊</span> Dashboard</a></div>'
-      + '<div class="nav-section"><div class="nav-section-title">Almacén</div><a href="#/products" class="nav-item" data-path="/products"><span class="nav-item-icon">📦</span> Productos</a><a href="#/locations" class="nav-item" data-path="/locations"><span class="nav-item-icon">📍</span> Ubicaciones</a><a href="#/map3d" class="nav-item" data-path="/map3d"><span class="nav-item-icon">🗺️</span> Mapa 3D</a></div>'
-      + '<div class="nav-section"><div class="nav-section-title">Operaciones</div><a href="#/inventory/entry" class="nav-item" data-path="/inventory"><span class="nav-item-icon">📋</span> Inventario</a></div>'
+      + '<div class="nav-section"><div class="nav-section-title">Almacén</div><a href="#/locations" class="nav-item" data-path="/locations"><span class="nav-item-icon">📍</span> Ubicaciones</a><a href="#/map3d" class="nav-item" data-path="/map3d"><span class="nav-item-icon">🗺️</span> Mapa 3D</a></div>'
+      + '<div class="nav-section"><div class="nav-section-title">Operaciones</div>'
+      + '<a href="#/inventory/entry" class="nav-item" data-path="/inventory/entry"><span class="nav-item-icon">📥</span> Nueva Entrada</a>'
+      + '<a href="#/inventory/exit" class="nav-item" data-path="/inventory/exit"><span class="nav-item-icon">📤</span> Nueva Salida</a>'
+      + '<a href="#/inventory/stock" class="nav-item" data-path="/inventory/stock"><span class="nav-item-icon">🔍</span> Consultar Stock</a>'
+      + '<a href="#/inventory/movements" class="nav-item" data-path="/inventory/movements"><span class="nav-item-icon">📋</span> Movimientos</a>'
+      + '<a href="#/products" class="nav-item" data-path="/products"><span class="nav-item-icon">📦</span> Productos</a>'
+      + '</div>'
       + '<div class="nav-section"><div class="nav-section-title">Sistema</div><a href="#/users" class="nav-item" data-path="/users"><span class="nav-item-icon">👥</span> Usuarios</a></div>'
       + '</nav>'
       + '<div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-user-avatar">' + WMS.getUserInitials(user?user.name:'') + '</div><div class="sidebar-user-info"><div class="sidebar-user-name">' + (user?user.name:'Usuario') + '</div><div class="sidebar-user-role">' + WMS.getRoleLabel(user?user.role:'') + '</div></div><button class="btn btn-ghost btn-icon btn-sm" id="logoutBtn" title="Cerrar sesión" style="margin-left:auto">🚪</button></div></div>'
@@ -77,10 +83,9 @@
   }
 
   function updateActiveNav(path) {
-    var base = '/' + path.split('/')[1];
     document.querySelectorAll('.nav-item').forEach(function(item) {
       var ip = item.dataset.path;
-      if (ip === base || (ip === '/inventory' && path.indexOf('/inventory') === 0)) item.classList.add('active');
+      if (ip === path || (path.startsWith(ip) && ip !== '/dashboard')) item.classList.add('active');
       else item.classList.remove('active');
     });
   }

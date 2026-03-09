@@ -35,10 +35,10 @@
       + '</div>'
       + '<div class="modal-overlay" id="productModal"><div class="modal"><div class="modal-header"><h3 class="modal-title" id="productModalTitle">Nuevo Producto</h3><button class="modal-close" onclick="WMS.closeModal(\'productModal\')">✕</button></div><div class="modal-body"><form id="productForm"><div class="form-row"><div class="form-group"><label class="form-label form-required">Código</label><input type="text" class="form-input" id="prodSku" placeholder="Ej: TOR-M10-50" required></div><div class="form-group"><label class="form-label form-required">Categoría</label><input type="text" class="form-input" id="prodCategory" placeholder="Ej: Tornillería" required></div></div><div class="form-group"><label class="form-label form-required">Descripción</label><input type="text" class="form-input" id="prodDescription" placeholder="Descripción del producto" required></div><div class="form-row"><div class="form-group"><label class="form-label">Unidad de medida</label><select class="form-select" id="prodUnit"><option value="uds">Unidades</option><option value="kg">Kilogramos</option><option value="m">Metros</option><option value="l">Litros</option><option value="cajas">Cajas</option></select></div><div class="form-group"><label class="form-label">Peso unitario (kg)</label><input type="number" step="0.001" class="form-input" id="prodWeight" placeholder="0.00"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Stock mínimo</label><input type="number" class="form-input" id="prodMinStock" placeholder="0" min="0"></div><div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:var(--space-4)"><label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:var(--font-sm);color:var(--text-secondary)"><input type="checkbox" id="prodLotRequired" style="width:18px;height:18px;accent-color:var(--primary-500)"> Lote obligatorio</label></div></div><input type="hidden" id="prodEditId"></form></div><div class="modal-footer"><button class="btn btn-secondary" onclick="WMS.closeModal(\'productModal\')">Cancelar</button><button class="btn btn-primary" id="saveProductBtn">Guardar</button></div></div></div>'
       + '<div class="modal-overlay" id="labelModal"><div class="modal" style="width:400px"><div class="modal-header"><h3 class="modal-title">Vista Previa de Etiqueta</h3><button class="modal-close" onclick="WMS.closeModal(\'labelModal\')">✕</button></div><div class="modal-body" style="display:flex;justify-content:center;padding:20px;background:#f0f2f5">'
-      + '<div id="labelPreview" style="width:75mm;height:55mm;background:#fff;border:1px solid #ccc;position:relative;padding:5mm;box-sizing:border-box;color:#000;display:flex;flex-direction:column;font-family:Arial,sans-serif">'
-      + '<div style="font-size:12px;font-weight:bold;margin-bottom:2px" id="labelSku">SKU-EXAMPLE</div>'
-      + '<div style="font-size:10px;line-height:1.2;flex:1" id="labelDesc">Product description goes here...</div>'
-      + '<div style="display:flex;justify-content:flex-end;align-items:flex-end"><div id="labelQr"></div></div>'
+      + '<div id="labelPreview" style="width:75mm;height:55mm;background:#fff;border:1px solid #ccc;position:relative;padding:4mm;box-sizing:border-box;color:#000;display:flex;flex-direction:column;font-family:Arial,sans-serif;overflow:hidden">'
+      + '<div style="font-size:32px;font-weight:900;margin-bottom:4px;word-break:break-all;line-height:1" id="labelSku">SKU-EXAMPLE</div>'
+      + '<div style="font-size:18px;line-height:1.2;font-weight:500;margin-bottom:8px;flex:1;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical" id="labelDesc">Product description goes here...</div>'
+      + '<div style="display:flex;justify-content:flex-end;align-items:flex-end;margin-top:auto"><div id="labelQr"></div></div>'
       + '</div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="WMS.closeModal(\'labelModal\')">Cerrar</button><button class="btn btn-primary" onclick="window.printLabel()">🖨️ Imprimir</button></div></div></div>';
 
     if (si) si.addEventListener('input', WMS.debounce(async function(e) { searchQuery = e.target.value; currentPage = 1; await renderPage(container); }, 250));
@@ -96,7 +96,7 @@
     var content = document.getElementById('labelPreview').innerHTML;
     var win = window.open('', 'PRINT', 'height=600,width=800');
     win.document.write('<html><head><title>Imprimir Etiqueta</title>');
-    win.document.write('<style>@page { size: 75mm 55mm; margin: 0; } body { margin: 0; padding: 0; } #label { width: 75mm; height: 55mm; padding: 5mm; box-sizing: border-box; display: flex; flex-direction: column; font-family: Arial, sans-serif; color: #000; }</style>');
+    win.document.write('<style>@page { size: 75mm 55mm; margin: 0; } body { margin: 0; padding: 0; } #label { width: 75mm; height: 55mm; padding: 4mm; box-sizing: border-box; display: flex; flex-direction: column; font-family: Arial, sans-serif; color: #000; overflow: hidden; }</style>');
     win.document.write('</head><body><div id="label">');
     win.document.write(content);
     win.document.write('</div></body></html>');
@@ -111,7 +111,7 @@
     document.getElementById('labelDesc').textContent = p.description;
     var qrEl = document.getElementById('labelQr');
     qrEl.innerHTML = '';
-    new QRCode(qrEl, { text: p.sku, width: 64, height: 64, colorDark: "#000000", colorLight: "#ffffff" });
+    new QRCode(qrEl, { text: p.sku, width: 90, height: 90, colorDark: "#000000", colorLight: "#ffffff" });
     WMS.openModal('labelModal');
   }
 
