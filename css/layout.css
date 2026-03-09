@@ -177,6 +177,29 @@
   color: var(--text-muted);
 }
 
+/* Logout Button */
+.btn-logout {
+  width: 100%;
+  margin-top: var(--space-4);
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.2);
+  color: #ff6b6b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-4);
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+.btn-logout:hover {
+  background: var(--danger);
+  color: #fff;
+  border-color: var(--danger);
+}
+.btn-logout span:first-child {
+  font-size: var(--font-sm);
+}
+
 /* ---- Main Area ---- */
 .main {
   flex: 1;
