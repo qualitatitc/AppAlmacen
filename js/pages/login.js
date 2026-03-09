@@ -93,7 +93,8 @@
       WMS.showToast('¡Bienvenido, ' + res.user.name + '!', 'success');
       window.location.hash = '#/dashboard';
     } catch (err) {
-      WMS.showToast('Error de conexión con el servidor.', 'error');
+      console.error('WMS Login Error:', err);
+      WMS.showToast('Error de conexión o configuración del servidor.', 'error');
       btn.disabled = false;
       btn.textContent = origText;
     }

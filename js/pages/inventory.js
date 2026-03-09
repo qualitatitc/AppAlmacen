@@ -35,13 +35,13 @@
     else if (activeTab === 'movements') await renderMovements(el);
   }
 
-  function positionOptions() {
-    var positions = WMS.Locations.getAll().filter(function(l) { return l.level==='position' && l.status==='active'; });
+  function positionOptions(locs) {
+    var positions = (locs || []).filter(function(l) { return l.level==='position' && l.status==='active'; });
     return positions.map(function(p) { return '<option value="' + p.id + '">' + p.code + ' — ' + p.name + '</option>'; }).join('');
   }
 
   function productOptions(prods) {
-    return prods.map(function(p) { return '<option value="' + p.id + '">' + p.sku + '</option>'; }).join('');
+    return (prods || []).map(function(p) { return '<option value="' + p.id + '">' + (p.sku || p.id) + '</option>'; }).join('');
   }
 
   // ---- ENTRY ----
@@ -73,9 +73,9 @@
     var rowSel = document.getElementById('entryRowSelect');
     var posSel = document.getElementById('entryPosSelect');
     
-    var locations = WMS.Locations.getAll();
-    var shelves = [...new Set(locations.map(l => l.code.split('-')[0]))].sort();
-    shelfSel.innerHTML = '<option value="">Sel...</option>' + shelves.map(s => `<option value="${s}">${s}</option>`).join('');
+    // locations is already available from line 49
+    var shelves = Array.from(new Set(locations.map(function(l) { return (l.code || '').split('-')[0]; }))).filter(function(s) { return s; }).sort();
+    shelfSel.innerHTML = '<option value="">Sel...</option>' + shelves.map(function(s) { return `<option value="${s}">${s}</option>`; }).join('');
 
     shelfSel.addEventListener('change', function() {
       var s = shelfSel.value;
