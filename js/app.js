@@ -6,6 +6,13 @@
 
   async function navigate() {
     var path = getPath();
+    
+    // Check if session is truly valid (DB check)
+    if (WMS.isAuthenticated()) {
+      var user = await WMS.getCurrentUser();
+      if (!user) { WMS.logout(); return; }
+    }
+
     if (!WMS.isAuthenticated() && path !== '/login') { window.location.hash = '#/login'; return; }
     if (WMS.isAuthenticated() && path === '/login') { window.location.hash = '#/dashboard'; return; }
     if (path === '/login') { WMS.renderLogin(); return; }
