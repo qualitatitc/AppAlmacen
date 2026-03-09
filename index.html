@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ITC Warehouse - Sistema de Gestión de Almacén. Controla inventario, ubicaciones, entradas, salidas y stock en tiempo real.">
+  <meta name="theme-color" content="#0b0e14">
+  <title>ITC Warehouse — Sistema de Gestión de Almacén</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+</head>
+<body>
+  <div id="app">
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;color:#5c6578;font-family:Inter,sans-serif;">
+      <div style="text-align:center">
+        <div style="font-size:3rem;margin-bottom:1rem;animation:pulse 1.5s ease-in-out infinite">📦</div>
+        <p>Cargando ITC Warehouse...</p>
+      </div>
+    </div>
+  </div>
+  <!-- Load order matters: libraries, utils, data, auth, pages, app -->
+  <script src="js/three.min.js"></script>
+  <script src="js/OrbitControls.js"></script>
+  <script src="https://unpkg.com/three@0.132.2/examples/js/controls/TransformControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/pages/login.js"></script>
+  <script src="js/pages/dashboard.js"></script>
+  <script src="js/pages/products.js"></script>
+  <script src="js/pages/locations.js"></script>
+  <script src="js/pages/inventory.js"></script>
+  <script src="js/pages/users.js"></script>
+  <script src="js/pages/map3d_v2.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
