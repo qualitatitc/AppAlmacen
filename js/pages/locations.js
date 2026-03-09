@@ -2,9 +2,11 @@
 // WMS - Locations Page (global namespace)
 // ============================================
 (function() {
-  WMS.renderLocations = function(container) {
-    var locations = WMS.Locations.getAll();
-    var canWrite = WMS.hasPermission('locations', 'write'), inv = WMS.Inventory.getAll();
+  WMS.renderLocations = async function(container) {
+    var [locations, inv, prods] = await Promise.all([
+      WMS.Locations.getAll(), WMS.Inventory.getAll(), WMS.Products.getAll()
+    ]);
+    var canWrite = await WMS.hasPermission('locations', 'write');
 
     // Grouping logic
     var shelves = {};
@@ -23,7 +25,7 @@
       });
       var qty = slotInv.reduce(function(s, i) { return s + (i.quantity||0); }, 0);
       var materials = slotInv.map(function(i) {
-        var p = WMS.Products.getById(i.productId);
+        var p = prods.find(function(prd){return prd.id===i.productId;});
         return '• ' + (p ? p.sku : i.productId) + ': ' + i.quantity + ' uds';
       }).join('<br>');
 
@@ -112,9 +114,9 @@
     var treeHtml = shelfLetters.map(function(l) { return renderShelf(l, shelves[l]); }).join('');
 
     var totalQty = inv.reduce(function(s, i) { return s + (i.quantity||0); }, 0);
-    var totalShelves = WMS.Stats.getTotalShelves();
-    var totalMods = WMS.Stats.getTotalLocations();
-    var totalSlotsCap = WMS.Stats.getTotalSlots();
+    var [totalShelves, totalMods, totalSlotsCap] = await Promise.all([
+      WMS.Stats.getTotalShelves(), WMS.Stats.getTotalLocations(), WMS.Stats.getTotalSlots()
+    ]);
 
     container.innerHTML = '<div class="page-header"><div><h1 class="page-title">Ubicaciones</h1><p class="page-subtitle">Estructura jerárquica del almacén</p></div><div style="display:flex;gap:var(--space-2)">' + (canWrite ? '<button class="btn btn-danger" id="deleteAllLocsBtn">🗑️ Borrar Todas</button><button class="btn btn-secondary" id="openGenBtn">🛠️ Generar Estructura</button><button class="btn btn-primary" id="addLocationBtn">+ Nueva Ubicación</button>' : '') + '</div></div>'
       + '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:var(--space-4);margin-bottom:var(--space-6)">'
@@ -155,22 +157,22 @@
       });
     });
     if (canWrite) {
-      container.querySelectorAll('.edit-loc-btn').forEach(function(b) { b.addEventListener('click', function(e) { e.stopPropagation(); openLocModal(b.dataset.id); }); });
-      container.querySelectorAll('.delete-loc-btn').forEach(function(b) { b.addEventListener('click', function(e) { e.stopPropagation(); delLoc(b.dataset.id, container); }); });
+      container.querySelectorAll('.edit-loc-btn').forEach(function(b) { b.addEventListener('click', async function(e) { e.stopPropagation(); await openLocModal(b.dataset.id); }); });
+      container.querySelectorAll('.delete-loc-btn').forEach(function(b) { b.addEventListener('click', async function(e) { e.stopPropagation(); await delLoc(b.dataset.id, container); }); });
       
       var delAll = document.getElementById('deleteAllLocsBtn');
       if (delAll) {
-        delAll.addEventListener('click', function() {
+        delAll.addEventListener('click', async function() {
           if (confirm('⚠️ ATENCIÓN ⚠️\n¿Estás seguro de que quieres BORRAR TODAS LAS UBICACIONES? Esta acción no se puede deshacer.')) {
-            var allLocs = WMS.Locations.getAll();
+            var allLocs = await WMS.Locations.getAll();
             var fails = 0;
-            allLocs.forEach(function(L) {
-              var r = WMS.Locations.delete(L.id);
+            for (var L of allLocs) {
+              var r = await WMS.Locations.delete(L.id);
               if (r && r.error) fails++;
-            });
+            }
             if (fails > 0) WMS.showToast(fails + ' ubicaciones no se pudieron borrar porque contienen stock.', 'warning');
             else WMS.showToast('Todas las ubicaciones han sido eliminadas.', 'success');
-            WMS.renderLocations(container);
+            await WMS.renderLocations(container);
           }
         });
       }
@@ -178,7 +180,7 @@
     
     // Main button listeners
     var addBtn = document.getElementById('addLocationBtn');
-    if (addBtn) addBtn.addEventListener('click', function() { openLocModal(); });
+    if (addBtn) addBtn.addEventListener('click', async function() { await openLocModal(); });
     
     var genBtn = document.getElementById('openGenBtn');
     if (genBtn) genBtn.addEventListener('click', function() { 
@@ -202,17 +204,17 @@
     }
     
     var runBtn = document.getElementById('runGenBtn');
-    if (runBtn) runBtn.addEventListener('click', function() { generateStructure(container); });
+    if (runBtn) runBtn.addEventListener('click', async function() { await generateStructure(container); });
     
     var saveBtn = document.getElementById('saveLocationBtn');
-    if (saveBtn) saveBtn.addEventListener('click', function() { saveLoc(container); });
+    if (saveBtn) saveBtn.addEventListener('click', async function() { await saveLoc(container); });
   };
 
-  function openLocModal(editId) {
+  async function openLocModal(editId) {
     document.getElementById('locationForm').reset();
     document.getElementById('locEditId').value = '';
     if (editId) {
-      var l = WMS.Locations.getById(editId); if(!l) return;
+      var l = await WMS.Locations.getById(editId); if(!l) return;
       document.getElementById('locationModalTitle').textContent = 'Editar Ubicación';
       document.getElementById('locCode').value = l.code||'';
       document.getElementById('locName').value = l.name||'';
@@ -223,17 +225,16 @@
     WMS.openModal('locationModal');
   }
 
-  function saveLoc(container) {
+  async function saveLoc(container) {
     var code = document.getElementById('locCode').value.trim(), name = document.getElementById('locName').value.trim();
     if (!code || !name) { WMS.showToast('Código y nombre son obligatorios.', 'warning'); return; }
     var editId = document.getElementById('locEditId').value;
-    var ex = WMS.Locations.getByCode(code);
+    var ex = await WMS.Locations.getByCode(code);
     if (ex && ex.id !== editId) { WMS.showToast('Ya existe una ubicación con este código.', 'error'); return; }
     var data = { code:code, name:name, level:'position', type:'almacenaje', parentId:null, status:'active' };
     
-    // For manual locations, we default to 1 row and 3 slots (or retain existing if editing)
     if (editId) {
-       var existing = WMS.Locations.getById(editId);
+       var existing = await WMS.Locations.getById(editId);
        if(existing) {
            data.rows = existing.rows || 1;
            data.slotsPerRow = existing.slotsPerRow || 3;
@@ -242,17 +243,17 @@
            if(existing.z_pos !== undefined) data.z_pos = existing.z_pos;
            if(existing.rotation !== undefined) data.rotation = existing.rotation;
        }
-       WMS.Locations.update(editId, data); WMS.showToast('Ubicación actualizada.', 'success'); 
+       await WMS.Locations.update(editId, data); WMS.showToast('Ubicación actualizada.', 'success'); 
     } else { 
        data.rows = 1;
        data.slotsPerRow = 3;
        data.maxCapacity = 3;
-       WMS.Locations.create(data); WMS.showToast('Ubicación creada.', 'success'); 
+       await WMS.Locations.create(data); WMS.showToast('Ubicación creada.', 'success'); 
     }
-    WMS.closeModal('locationModal'); WMS.renderLocations(container);
+    WMS.closeModal('locationModal'); await WMS.renderLocations(container);
   }
 
-  function generateStructure(container) {
+  async function generateStructure(container) {
     var est = parseInt(document.getElementById('genEst').value)||0;
     var mod = parseInt(document.getElementById('genMod').value)||0;
     var rows = parseInt(document.getElementById('genRows').value)||1;
@@ -268,13 +269,18 @@
     var totalSlots = est * mod * rows * slotsPerRow;
     var calcCap = rows * slotsPerRow;
 
+    var runBtn = document.getElementById('runGenBtn');
+    runBtn.disabled = true;
+    runBtn.textContent = 'Generando...';
+
     for (var e=0; e<est; e++) {
       var letter = abc[e % 26];
       for (var m=1; m<=mod; m++) {
         var code = letter + '-M' + m;
         var name = 'Estantería ' + letter + ' Módulo ' + m;
-        if (!WMS.Locations.getByCode(code)) {
-          WMS.Locations.create({ 
+        var ex = await WMS.Locations.getByCode(code);
+        if (!ex) {
+          await WMS.Locations.create({ 
             code:code, 
             name:name, 
             level:'position', 
@@ -291,14 +297,14 @@
     }
     WMS.showToast('Generadas ' + added + ' ubicaciones. Total de huecos: ' + totalSlots, 'success');
     WMS.closeModal('genModal');
-    WMS.renderLocations(container);
+    await WMS.renderLocations(container);
   }
 
-  function delLoc(id, container) {
-    var l = WMS.Locations.getById(id);
+  async function delLoc(id, container) {
+    var l = await WMS.Locations.getById(id);
     if (!l || !confirm('¿Eliminar "' + l.code + '"?')) return;
-    var r = WMS.Locations.delete(id);
+    var r = await WMS.Locations.delete(id);
     if (r && r.error) { WMS.showToast(r.error, 'error'); return; }
-    WMS.showToast('Ubicación eliminada.', 'success'); WMS.renderLocations(container);
+    WMS.showToast('Ubicación eliminada.', 'success'); await WMS.renderLocations(container);
   }
 })();

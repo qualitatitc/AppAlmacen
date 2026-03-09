@@ -6,18 +6,18 @@
 
   WMS.seedData(); // Init seed data
 
-  WMS.getCurrentUser = function() {
+  WMS.getCurrentUser = async function() {
     try {
       var s = JSON.parse(localStorage.getItem(SESSION_KEY));
       if (!s) return null;
-      return WMS.Users.getById(s.userId);
+      return await WMS.Users.getById(s.userId);
     } catch(e) { return null; }
   };
 
-  WMS.isAuthenticated = function() { return WMS.getCurrentUser() !== null; };
+  WMS.isAuthenticated = function() { return localStorage.getItem(SESSION_KEY) !== null; };
 
-  WMS.login = function(email, password) {
-    var user = WMS.Users.getByEmail(email);
+  WMS.login = async function(email, password) {
+    var user = await WMS.Users.getByEmail(email);
     if (!user) return { error: 'Usuario no encontrado.' };
     if (user.password !== password) return { error: 'Contraseña incorrecta.' };
     if (user.status === 'inactive') return { error: 'Cuenta inactiva. Contacte al administrador.' };
@@ -25,10 +25,10 @@
     return { success: true, user: user };
   };
 
-  WMS.register = function(name, email, password, role) {
-    if (WMS.Users.getByEmail(email)) return { error: 'Este email ya está registrado.' };
+  WMS.register = async function(name, email, password, role) {
+    if (await WMS.Users.getByEmail(email)) return { error: 'Este email ya está registrado.' };
     if (password.length < 8) return { error: 'La contraseña debe tener mínimo 8 caracteres.' };
-    var user = WMS.Users.create({ email: email, password: password, name: name, role: role || 'operador', status: 'active' });
+    var user = await WMS.Users.create({ email: email, password: password, name: name, role: role || 'operador', status: 'active' });
     localStorage.setItem(SESSION_KEY, JSON.stringify({ userId: user.id, loginAt: new Date().toISOString() }));
     return { success: true, user: user };
   };
@@ -38,8 +38,8 @@
     window.location.hash = '#/login';
   };
 
-  WMS.hasPermission = function(mod, action) {
-    var user = WMS.getCurrentUser(); if (!user) return false;
+  WMS.hasPermission = async function(mod, action) {
+    var user = await WMS.getCurrentUser(); if (!user) return false;
     action = action || 'read';
     var perms = {
       admin: { all: 'rw' },

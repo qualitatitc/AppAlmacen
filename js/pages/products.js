@@ -4,21 +4,24 @@
 (function() {
   var currentPage = 1, searchQuery = '', categoryFilter = '';
 
-  WMS.renderProducts = function(container) {
+  WMS.renderProducts = async function(container) {
     currentPage = 1; searchQuery = ''; categoryFilter = '';
-    renderPage(container);
+    await renderPage(container);
   };
 
-  function renderPage(container) {
-    var items = WMS.Products.getAll();
+  async function renderPage(container) {
+    var [allItems, inv] = await Promise.all([WMS.Products.getAll(), WMS.Inventory.getAll()]);
+    var items = allItems;
     if (searchQuery) { var q = searchQuery.toLowerCase(); items = items.filter(function(p) { return (p.sku||'').toLowerCase().includes(q) || (p.description||'').toLowerCase().includes(q); }); }
     if (categoryFilter) { items = items.filter(function(p) { return p.category === categoryFilter; }); }
-    var cats = []; WMS.Products.getAll().forEach(function(p) { if (p.category && cats.indexOf(p.category) === -1) cats.push(p.category); }); cats.sort();
+    
+    var cats = []; allItems.forEach(function(p) { if (p.category && cats.indexOf(p.category) === -1) cats.push(p.category); }); cats.sort();
     var pg = WMS.paginate(items, currentPage);
-    var canWrite = WMS.hasPermission('products', 'write');
+    var canWrite = await WMS.hasPermission('products', 'write');
 
     var rows = ''; pg.data.forEach(function(p) {
-      var st = WMS.Inventory.getTotalStock(p.id), isLow = p.minStock > 0 && st <= p.minStock;
+      var st = inv.filter(function(i){return i.productId===p.id;}).reduce(function(s,i){return s+(i.quantity||0);}, 0);
+      var isLow = p.minStock > 0 && st <= p.minStock;
       rows += '<tr><td><span class="product-sku">' + p.sku + '</span></td><td>' + p.description + '</td><td><span class="badge badge-neutral">' + (p.category||'—') + '</span></td><td>' + (p.unit||'uds') + '</td><td><span class="badge ' + (isLow?'badge-danger':'badge-success') + '">' + WMS.formatNumber(st) + '</span></td><td>' + (p.minStock?WMS.formatNumber(p.minStock):'—') + '</td><td>' + (p.lotRequired?'<span class="badge badge-warning">Sí</span>':'No') + '</td>'
       + (canWrite ? '<td><div class="flex gap-1"><button class="btn btn-ghost btn-icon btn-sm print-label-btn" data-id="' + p.id + '" title="Imprimir Etiqueta">🏷️</button><button class="btn btn-ghost btn-icon btn-sm edit-product-btn" data-id="' + p.id + '" title="Editar">✏️</button><button class="btn btn-ghost btn-icon btn-sm delete-product-btn" data-id="' + p.id + '" title="Eliminar">🗑️</button></div></td>' : '') + '</tr>';
     });
@@ -38,40 +41,39 @@
       + '<div style="display:flex;justify-content:flex-end;align-items:flex-end"><div id="labelQr"></div></div>'
       + '</div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="WMS.closeModal(\'labelModal\')">Cerrar</button><button class="btn btn-primary" onclick="window.printLabel()">🖨️ Imprimir</button></div></div></div>';
 
-    var si = document.getElementById('productSearch');
-    if (si) si.addEventListener('input', WMS.debounce(function(e) { searchQuery = e.target.value; currentPage = 1; renderPage(container); }, 250));
+    if (si) si.addEventListener('input', WMS.debounce(async function(e) { searchQuery = e.target.value; currentPage = 1; await renderPage(container); }, 250));
     var cf = document.getElementById('categoryFilter');
-    if (cf) cf.addEventListener('change', function(e) { categoryFilter = e.target.value; currentPage = 1; renderPage(container); });
+    if (cf) cf.addEventListener('change', async function(e) { categoryFilter = e.target.value; currentPage = 1; await renderPage(container); });
     var ab = document.getElementById('addProductBtn');
     if (ab) ab.addEventListener('click', function() { openProductModal(); });
     
     var ib = document.getElementById('importExcelBtn');
     if (ib) ib.addEventListener('click', function() { document.getElementById('excelInput').click(); });
     var ein = document.getElementById('excelInput');
-    if (ein) ein.addEventListener('change', function(e) { importExcel(e, container); });
+    if (ein) ein.addEventListener('change', async function(e) { await importExcel(e, container); });
 
-    container.querySelectorAll('.print-label-btn').forEach(function(b) { b.addEventListener('click', function() { showLabel(b.dataset.id); }); });
-    container.querySelectorAll('.edit-product-btn').forEach(function(b) { b.addEventListener('click', function() { openProductModal(b.dataset.id); }); });
-    container.querySelectorAll('.delete-product-btn').forEach(function(b) { b.addEventListener('click', function() { deleteProduct(b.dataset.id, container); }); });
+    container.querySelectorAll('.print-label-btn').forEach(function(b) { b.addEventListener('click', async function() { await showLabel(b.dataset.id); }); });
+    container.querySelectorAll('.edit-product-btn').forEach(function(b) { b.addEventListener('click', async function() { await openProductModal(b.dataset.id); }); });
+    container.querySelectorAll('.delete-product-btn').forEach(function(b) { b.addEventListener('click', async function() { await deleteProduct(b.dataset.id, container); }); });
     var sp = document.getElementById('saveProductBtn');
-    if (sp) sp.addEventListener('click', function() { saveProduct(container); });
+    if (sp) sp.addEventListener('click', async function() { await saveProduct(container); });
     var pgEl = document.getElementById('productPagination');
-    if (pgEl) WMS.renderPagination(pgEl, pg, function(p) { currentPage = p; renderPage(container); });
+    if (pgEl) WMS.renderPagination(pgEl, pg, async function(p) { currentPage = p; await renderPage(container); });
   }
 
-  function importExcel(e, container) {
+  async function importExcel(e, container) {
     var file = e.target.files[0]; if (!file) return;
     var reader = new FileReader();
-    reader.onload = function(evt) {
+    reader.onload = async function(evt) {
       try {
         var data = new Uint8Array(evt.target.result);
         var workbook = XLSX.read(data, { type: 'array' });
         var sheet = workbook.Sheets[workbook.SheetNames[0]];
         var rows = XLSX.utils.sheet_to_json(sheet);
         var count = 0;
-        rows.forEach(function(r) {
+        for (var r of rows) {
           if (r.sku || r.SKU) {
-            WMS.Products.create({
+            await WMS.Products.create({
               sku: String(r.sku || r.SKU || ''),
               description: String(r.description || r.DESCRIPCION || ''),
               category: String(r.category || r.CATEGORIA || ''),
@@ -81,9 +83,9 @@
             });
             count++;
           }
-        });
+        }
         WMS.showToast('Se han importado ' + count + ' productos.', 'success');
-        renderPage(container);
+        await renderPage(container);
       } catch (err) { WMS.showToast('Error al procesar el archivo Excel.', 'error'); }
     };
     reader.readAsArrayBuffer(file);
@@ -103,8 +105,8 @@
     setTimeout(function() { win.print(); win.close(); }, 500);
   };
 
-  function showLabel(id) {
-    var p = WMS.Products.getById(id); if (!p) return;
+  async function showLabel(id) {
+    var p = await WMS.Products.getById(id); if (!p) return;
     document.getElementById('labelSku').textContent = p.sku;
     document.getElementById('labelDesc').textContent = p.description;
     var qrEl = document.getElementById('labelQr');
@@ -113,12 +115,12 @@
     WMS.openModal('labelModal');
   }
 
-  function openProductModal(editId) {
+  async function openProductModal(editId) {
     var title = document.getElementById('productModalTitle');
     document.getElementById('productForm').reset();
     document.getElementById('prodEditId').value = '';
     if (editId) {
-      var p = WMS.Products.getById(editId);
+      var p = await WMS.Products.getById(editId);
       if (p) {
         title.textContent = 'Editar Producto';
         document.getElementById('prodSku').value = p.sku||'';
@@ -134,7 +136,7 @@
     WMS.openModal('productModal');
   }
 
-  function saveProduct(container) {
+  async function saveProduct(container) {
     var sku = document.getElementById('prodSku').value.trim();
     var desc = document.getElementById('prodDescription').value.trim();
     var cat = document.getElementById('prodCategory').value.trim();
@@ -144,16 +146,16 @@
     var lotReq = document.getElementById('prodLotRequired').checked;
     var editId = document.getElementById('prodEditId').value;
     if (!sku || !desc) { WMS.showToast('Código y descripción son obligatorios.', 'warning'); return; }
-    if (editId) { WMS.Products.update(editId, { sku:sku, description:desc, category:cat, unit:unit, weight:weight, minStock:minStock, lotRequired:lotReq }); WMS.showToast('Producto actualizado.', 'success'); }
-    else { WMS.Products.create({ sku:sku, description:desc, category:cat, unit:unit, weight:weight, minStock:minStock, lotRequired:lotReq }); WMS.showToast('Producto creado.', 'success'); }
-    WMS.closeModal('productModal'); renderPage(container);
+    if (editId) { await WMS.Products.update(editId, { sku:sku, description:desc, category:cat, unit:unit, weight:weight, minStock:minStock, lotRequired:lotReq }); WMS.showToast('Producto actualizado.', 'success'); }
+    else { await WMS.Products.create({ sku:sku, description:desc, category:cat, unit:unit, weight:weight, minStock:minStock, lotRequired:lotReq }); WMS.showToast('Producto creado.', 'success'); }
+    WMS.closeModal('productModal'); await renderPage(container);
   }
 
-  function deleteProduct(id, container) {
-    var p = WMS.Products.getById(id);
+  async function deleteProduct(id, container) {
+    var p = await WMS.Products.getById(id);
     if (!p || !confirm('¿Eliminar el producto "' + p.description + '"?')) return;
-    var r = WMS.Products.delete(id);
+    var r = await WMS.Products.delete(id);
     if (r && r.error) { WMS.showToast(r.error, 'error'); return; }
-    WMS.showToast('Producto eliminado.', 'success'); renderPage(container);
+    WMS.showToast('Producto eliminado.', 'success'); await renderPage(container);
   }
 })();

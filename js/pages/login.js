@@ -62,22 +62,40 @@
     document.getElementById('toggleAuth').addEventListener('click', toggleMode);
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     var email = document.getElementById('loginEmail').value.trim();
     var password = document.getElementById('loginPassword').value;
+    var btn = document.getElementById('loginBtn');
     if (!email || !password) { WMS.showToast('Completa todos los campos.', 'warning'); return; }
-    if (isRegisterMode) {
-      var name = document.getElementById('loginName').value.trim();
-      if (!name) { WMS.showToast('Ingresa tu nombre.', 'warning'); return; }
-      var res = WMS.register(name, email, password);
-      if (res.error) { WMS.showToast(res.error, 'error'); return; }
+    
+    var origText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Procesando...';
+
+    try {
+      var res;
+      if (isRegisterMode) {
+        var name = document.getElementById('loginName').value.trim();
+        if (!name) { WMS.showToast('Ingresa tu nombre.', 'warning'); btn.disabled = false; btn.textContent = origText; return; }
+        res = await WMS.register(name, email, password);
+      } else {
+        res = await WMS.login(email, password);
+      }
+
+      if (res.error) {
+        WMS.showToast(res.error, 'error');
+        btn.disabled = false;
+        btn.textContent = origText;
+        return;
+      }
+
       WMS.showToast('¡Bienvenido, ' + res.user.name + '!', 'success');
-    } else {
-      var res = WMS.login(email, password);
-      if (res.error) { WMS.showToast(res.error, 'error'); return; }
-      WMS.showToast('¡Bienvenido, ' + res.user.name + '!', 'success');
+      window.location.hash = '#/dashboard';
+    } catch (err) {
+      WMS.showToast('Error de conexión con el servidor.', 'error');
+      btn.disabled = false;
+      btn.textContent = origText;
     }
-    window.location.hash = '#/dashboard';
   }
 })();

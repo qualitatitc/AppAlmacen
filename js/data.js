@@ -2,88 +2,114 @@
 // WMS - Data Access Layer (global namespace)
 // ============================================
 (function() {
+  var SUPABASE_URL = 'https://rexttaeejotixrvkazre.supabase.co';
+  var SUPABASE_ANON_KEY = 'sb_publishable_rDGzAfPHspwy7FvEAgN8Wg_29GEu_4U';
+  
+  var supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  WMS.supabase = supabase;
+
   var KEYS = {
-    users: 'wms_users', products: 'wms_products', locations: 'wms_locations',
-    inventory: 'wms_inventory', movements: 'wms_movements', seeded: 'wms_seeded'
+    users: 'users', products: 'products', locations: 'locations',
+    inventory: 'inventory', movements: 'movements'
   };
 
-  function getAll(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e) { return []; } }
-  function setAll(k, d) { localStorage.setItem(k, JSON.stringify(d)); }
-  function getById(k, id) { return getAll(k).find(function(i) { return i.id === id; }) || null; }
-  function create(k, item) {
-    var items = getAll(k);
+  // Helper to convert LocalStorage keys to Supabase table names
+  async function getAll(table) {
+    const { data, error } = await supabase.from(table).select('*');
+    if (error) { console.error('Error fetching ' + table, error); return []; }
+    return data || [];
+  }
+
+  async function getById(table, id) {
+    const { data, error } = await supabase.from(table).select('*').eq('id', id).single();
+    if (error) { console.error('Error fetching record', error); return null; }
+    return data;
+  }
+
+  async function create(table, item) {
     var n = Object.assign({}, item, { id: WMS.generateId(), createdAt: new Date().toISOString() });
-    items.push(n); setAll(k, items); return n;
+    const { data, error } = await supabase.from(table).insert([n]).select().single();
+    if (error) { console.error('Error creating record', error); throw error; }
+    return data;
   }
-  function update(k, id, upd) {
-    var items = getAll(k), idx = items.findIndex(function(i) { return i.id === id; });
-    if (idx === -1) return null;
-    items[idx] = Object.assign({}, items[idx], upd, { updatedAt: new Date().toISOString() });
-    setAll(k, items); return items[idx];
+
+  async function update(table, id, upd) {
+    var itm = Object.assign({}, upd, { updatedAt: new Date().toISOString() });
+    const { data, error } = await supabase.from(table).update(itm).eq('id', id).select().single();
+    if (error) { console.error('Error updating record', error); throw error; }
+    return data;
   }
-  function remove(k, id) {
-    var items = getAll(k), f = items.filter(function(i) { return i.id !== id; });
-    setAll(k, f); return f.length < items.length;
+
+  async function remove(table, id) {
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (error) { console.error('Error deleting record', error); throw error; }
+    return true;
   }
 
   WMS.Products = {
-    getAll: function() { return getAll(KEYS.products); },
-    getById: function(id) { return getById(KEYS.products, id); },
-    create: function(p) { return create(KEYS.products, p); },
-    update: function(id, p) { return update(KEYS.products, id, p); },
-    delete: function(id) {
-      var inv = getAll(KEYS.inventory).filter(function(i) { return i.productId === id && i.quantity > 0; });
+    getAll: async function() { return await getAll(KEYS.products); },
+    getById: async function(id) { return await getById(KEYS.products, id); },
+    create: async function(p) { return await create(KEYS.products, p); },
+    update: async function(id, p) { return await update(KEYS.products, id, p); },
+    delete: async function(id) {
+      const inv = (await getAll(KEYS.inventory)).filter(function(i) { return i.productId === id && (i.quantity||0) > 0; });
       if (inv.length > 0) return { error: 'No se puede eliminar: producto con stock en almacén.' };
-      return remove(KEYS.products, id);
+      return await remove(KEYS.products, id);
     },
-    search: function(q) {
+    search: async function(q) {
       q = q.toLowerCase();
-      return getAll(KEYS.products).filter(function(p) {
+      const all = await getAll(KEYS.products);
+      return all.filter(function(p) {
         return (p.sku||'').toLowerCase().includes(q) || (p.description||'').toLowerCase().includes(q);
       });
     }
   };
 
   WMS.Locations = {
-    getAll: function() { return getAll(KEYS.locations); },
-    getById: function(id) { return getById(KEYS.locations, id); },
-    create: function(l) { return create(KEYS.locations, l); },
-    update: function(id, l) { return update(KEYS.locations, id, l); },
-    delete: function(id) {
-      var inv = getAll(KEYS.inventory).filter(function(i) { return i.locationId === id && i.quantity > 0; });
+    getAll: async function() { return await getAll(KEYS.locations); },
+    getById: async function(id) { return await getById(KEYS.locations, id); },
+    create: async function(l) { return await create(KEYS.locations, l); },
+    update: async function(id, l) { return await update(KEYS.locations, id, l); },
+    delete: async function(id) {
+      const inv = (await getAll(KEYS.inventory)).filter(function(i) { return i.locationId === id && (i.quantity||0) > 0; });
       if (inv.length > 0) return { error: 'No se puede eliminar: ubicación con mercancía.' };
-      return remove(KEYS.locations, id);
+      return await remove(KEYS.locations, id);
     },
-    getByCode: function(c) { return getAll(KEYS.locations).find(function(l) { return l.code === c; }) || null; },
-    getRoots: function() { return getAll(KEYS.locations).filter(function(l) { return !l.parentId; }); }
+    getByCode: async function(c) {
+      const all = await getAll(KEYS.locations);
+      return all.find(function(l) { return l.code === c; }) || null;
+    },
+    getRoots: async function() {
+      const all = await getAll(KEYS.locations);
+      return all.filter(function(l) { return !l.parentId; });
+    }
   };
 
   WMS.Inventory = {
-    getAll: function() { return getAll(KEYS.inventory); },
-    addStock: function(productId, locationId, quantity, lot, entryDate, col, row, pos) {
-      var items = getAll(KEYS.inventory);
-      var ex = items.find(function(i) { return i.productId === productId && i.locationId === locationId && (i.lot||'') === (lot||'') && (i.col||'') === (col||'') && (i.row||'') === (row||'') && (i.pos||'') === (pos||''); });
+    getAll: async function() { return await getAll(KEYS.inventory); },
+    addStock: async function(productId, locationId, quantity, lot, entryDate, col, row, pos) {
+      const items = await getAll(KEYS.inventory);
+      const ex = items.find(function(i) { return i.productId === productId && i.locationId === locationId && (i.lot||'') === (lot||'') && (i.col||'') === (col||'') && (i.row||'') === (row||'') && (i.pos||'') === (pos||''); });
       if (ex) {
-        ex.quantity = (ex.quantity||0) + quantity;
-        ex.updatedAt = new Date().toISOString();
-        setAll(KEYS.inventory, items); return ex;
+        return await update(KEYS.inventory, ex.id, { quantity: (ex.quantity||0) + quantity });
       }
-      return create(KEYS.inventory, { productId: productId, locationId: locationId, quantity: quantity, lot: lot||'', entryDate: entryDate || new Date().toISOString(), col: col||'', row: row||'', pos: pos||'' });
+      return await create(KEYS.inventory, { productId: productId, locationId: locationId, quantity: quantity, lot: lot||'', entryDate: entryDate || new Date().toISOString(), col: col||'', row: row||'', pos: pos||'' });
     },
-    removeStock: function(productId, locationId, quantity, lot, col, row, pos) {
-      var items = getAll(KEYS.inventory);
-      var e = items.find(function(i) { return i.productId === productId && i.locationId === locationId && (i.lot||'') === (lot||'') && (i.col||'') === (col||'') && (i.row||'') === (row||'') && (i.pos||'') === (pos||''); });
+    removeStock: async function(productId, locationId, quantity, lot, col, row, pos) {
+      const items = await getAll(KEYS.inventory);
+      const e = items.find(function(i) { return i.productId === productId && i.locationId === locationId && (i.lot||'') === (lot||'') && (i.col||'') === (col||'') && (i.row||'') === (row||'') && (i.pos||'') === (pos||''); });
       if (!e) return { error: 'No hay stock en esta ubicación.' };
       if (e.quantity < quantity) return { error: 'Stock insuficiente. Disponible: ' + e.quantity };
-      e.quantity -= quantity; e.updatedAt = new Date().toISOString();
-      setAll(KEYS.inventory, items); return e;
+      return await update(KEYS.inventory, e.id, { quantity: e.quantity - quantity });
     },
-    getTotalStock: function(pid) {
-      return getAll(KEYS.inventory).filter(function(i) { return i.productId === pid; })
+    getTotalStock: async function(pid) {
+      const inv = await getAll(KEYS.inventory);
+      return inv.filter(function(i) { return i.productId === pid; })
         .reduce(function(s, i) { return s + (i.quantity||0); }, 0);
     },
-    getStockSummary: function() {
-      var inv = getAll(KEYS.inventory), prods = getAll(KEYS.products), map = {};
+    getStockSummary: async function() {
+      const [inv, prods] = await Promise.all([getAll(KEYS.inventory), getAll(KEYS.products)]);
+      const map = {};
       inv.forEach(function(i) {
         if (!map[i.productId]) map[i.productId] = { totalQty: 0, locations: 0 };
         map[i.productId].totalQty += (i.quantity||0);
@@ -96,31 +122,42 @@
   };
 
   WMS.Movements = {
-    getAll: function() { return getAll(KEYS.movements).sort(function(a,b) { return new Date(b.timestamp) - new Date(a.timestamp); }); },
-    create: function(m) { return create(KEYS.movements, Object.assign({}, m, { timestamp: new Date().toISOString() })); },
-    getByProduct: function(pid) { return getAll(KEYS.movements).filter(function(m) { return m.productId === pid; }); },
-    getRecent: function(n) { return WMS.Movements.getAll().slice(0, n||10); }
+    getAll: async function() {
+      const all = await getAll(KEYS.movements);
+      return all.sort(function(a,b) { return new Date(b.timestamp) - new Date(a.timestamp); });
+    },
+    create: async function(m) { return await create(KEYS.movements, Object.assign({}, m, { timestamp: new Date().toISOString() })); },
+    getByProduct: async function(pid) {
+      const all = await getAll(KEYS.movements);
+      return all.filter(function(m) { return m.productId === pid; });
+    },
+    getRecent: async function(n) { return (await WMS.Movements.getAll()).slice(0, n||10); }
   };
 
   WMS.Users = {
-    getAll: function() { return getAll(KEYS.users); },
-    getById: function(id) { return getById(KEYS.users, id); },
-    getByEmail: function(email) { return getAll(KEYS.users).find(function(u) { return u.email === email; }) || null; },
-    create: function(u) { return create(KEYS.users, u); },
-    update: function(id, u) { return update(KEYS.users, id, u); },
-    delete: function(id) {
-      var mvs = getAll(KEYS.movements).filter(function(m) { return m.userId === id; });
+    getAll: async function() { return await getAll(KEYS.users); },
+    getById: async function(id) { return await getById(KEYS.users, id); },
+    getByEmail: async function(email) {
+      const all = await getAll(KEYS.users);
+      return all.find(function(u) { return u.email === email; }) || null;
+    },
+    create: async function(u) { return await create(KEYS.users, u); },
+    update: async function(id, u) { return await update(KEYS.users, id, u); },
+    delete: async function(id) {
+      const mvs = (await getAll(KEYS.movements)).filter(function(m) { return m.userId === id; });
       if (mvs.length > 0) return { error: 'Usuario con operaciones registradas. Solo se puede inactivar.' };
-      return remove(KEYS.users, id);
+      return await remove(KEYS.users, id);
     }
   };
 
   WMS.Stats = {
-    getTotalProducts: function() { return getAll(KEYS.products).length; },
-    getTotalStock: function() { return getAll(KEYS.inventory).reduce(function(s,i) { return s+(i.quantity||0); }, 0); },
-    getTotalLocations: function() { return getAll(KEYS.locations).length; },
-    getTotalShelves: function() {
-      var locs = getAll(KEYS.locations);
+    getTotalProducts: async function() { return (await getAll(KEYS.products)).length; },
+    getTotalStock: async function() {
+      return (await getAll(KEYS.inventory)).reduce(function(s,i) { return s+(i.quantity||0); }, 0);
+    },
+    getTotalLocations: async function() { return (await getAll(KEYS.locations)).length; },
+    getTotalShelves: async function() {
+      var locs = await getAll(KEYS.locations);
       var s = new Set();
       locs.forEach(function(l) {
         var m = (l.code||'').match(/^([A-Z])-/);
@@ -128,31 +165,37 @@
       });
       return s.size;
     },
-    getTotalSlots: function() {
-      return getAll(KEYS.locations).reduce(function(sum, l) {
+    getTotalSlots: async function() {
+      const locs = await getAll(KEYS.locations);
+      return locs.reduce(function(sum, l) {
         if (l.maxCapacity) return sum + l.maxCapacity;
         return sum + ((l.rows||1) * (l.slotsPerRow||3));
       }, 0);
     },
-    getOccupiedLocations: function() {
-      var s = new Set(); getAll(KEYS.inventory).filter(function(i){ return i.quantity>0; }).forEach(function(i){ s.add(i.locationId); }); return s.size;
+    getOccupiedLocations: async function() {
+      const inv = await getAll(KEYS.inventory);
+      var s = new Set(); inv.filter(function(i){ return (i.quantity||0)>0; }).forEach(function(i){ s.add(i.locationId); }); return s.size;
     },
-    getOccupancyPercent: function() {
-      var t = WMS.Stats.getTotalLocations(); if(t===0) return 0;
-      return Math.round((WMS.Stats.getOccupiedLocations()/t)*100);
+    getOccupancyPercent: async function() {
+      var [occ, tot] = await Promise.all([WMS.Stats.getOccupiedLocations(), WMS.Stats.getTotalLocations()]);
+      if(tot===0) return 0;
+      return Math.round((occ/tot)*100);
     },
-    getLowStockProducts: function() {
-      var prods = getAll(KEYS.products), inv = getAll(KEYS.inventory), sm = {};
+    getLowStockProducts: async function() {
+      const [prods, inv] = await Promise.all([getAll(KEYS.products), getAll(KEYS.inventory)]);
+      const sm = {};
       inv.forEach(function(i) { sm[i.productId] = (sm[i.productId]||0) + (i.quantity||0); });
       return prods.filter(function(p) { return p.minStock > 0 && (sm[p.id]||0) <= p.minStock; });
     },
-    getMovementsToday: function() {
+    getMovementsToday: async function() {
       var t = new Date().toISOString().slice(0,10);
-      return getAll(KEYS.movements).filter(function(m) { return (m.timestamp||'').startsWith(t); }).length;
+      const all = await getAll(KEYS.movements);
+      return all.filter(function(m) { return (m.timestamp||'').startsWith(t); }).length;
     },
-    getMovementsThisMonth: function() {
+    getMovementsThisMonth: async function() {
       var mon = new Date().toISOString().slice(0,7);
-      return getAll(KEYS.movements).filter(function(m) { return (m.timestamp||'').startsWith(mon); }).length;
+      const all = await getAll(KEYS.movements);
+      return all.filter(function(m) { return (m.timestamp||'').startsWith(mon); }).length;
     }
   };
 

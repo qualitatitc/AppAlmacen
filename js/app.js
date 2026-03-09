@@ -4,26 +4,30 @@
 (function() {
   function getPath() { return (window.location.hash.replace('#', '') || '/dashboard'); }
 
-  function navigate() {
+  async function navigate() {
     var path = getPath();
     if (!WMS.isAuthenticated() && path !== '/login') { window.location.hash = '#/login'; return; }
     if (WMS.isAuthenticated() && path === '/login') { window.location.hash = '#/dashboard'; return; }
     if (path === '/login') { WMS.renderLogin(); return; }
-    if (!document.getElementById('appShell')) renderShell();
+    if (!document.getElementById('appShell')) await renderShell();
     updateActiveNav(path);
     var c = document.getElementById('pageContent'); if (!c) return;
-    if (path === '/dashboard') WMS.renderDashboard(c);
-    else if (path === '/products') WMS.renderProducts(c);
-    else if (path === '/locations') WMS.renderLocations(c);
-    else if (path.indexOf('/inventory') === 0) { var sub = path.split('/')[2] || null; WMS.renderInventory(c, sub); }
-    else if (path === '/users') WMS.renderUsers(c);
-    else if (path === '/map3d') WMS.renderMap3D(c);
+    
+    // Show a small loader while switching pages
+    c.innerHTML = '<div style="display:flex;justify-content:center;padding:50px;color:var(--text-secondary)">Cargando...</div>';
+
+    if (path === '/dashboard') await WMS.renderDashboard(c);
+    else if (path === '/products') await WMS.renderProducts(c);
+    else if (path === '/locations') await WMS.renderLocations(c);
+    else if (path.indexOf('/inventory') === 0) { var sub = path.split('/')[2] || null; await WMS.renderInventory(c, sub); }
+    else if (path === '/users') await WMS.renderUsers(c);
+    else if (path === '/map3d') await WMS.renderMap3D(c);
     else c.innerHTML = '<div class="empty-state" style="margin-top:var(--space-12)"><div class="empty-state-icon">🔍</div><h3 class="empty-state-title">Página no encontrada</h3><a href="#/dashboard" class="btn btn-primary">Ir al Dashboard</a></div>';
     updateBreadcrumb(path);
   }
 
-  function renderShell() {
-    var user = WMS.getCurrentUser();
+  async function renderShell() {
+    var user = await WMS.getCurrentUser();
     document.getElementById('app').innerHTML = '<div class="app" id="appShell">'
       + '<div class="sidebar-overlay" id="sidebarOverlay"></div>'
       + '<aside class="sidebar" id="sidebar">'
@@ -58,6 +62,18 @@
         document.getElementById('sidebarOverlay').classList.remove('active');
       });
     });
+
+    // Global Search Logic
+    var searchInput = document.getElementById('globalSearch');
+    var searchTimeout;
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+          navigate(); // Re-render current page with search context
+        }, 500);
+      });
+    }
   }
 
   function updateActiveNav(path) {

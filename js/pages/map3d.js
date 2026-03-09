@@ -9,29 +9,30 @@ console.log("CRITICAL: map3d.js is parsing...");
   console.log("Map3D IIFE executing...");
 
   window.WMS = window.WMS || {};
-  window.WMS.renderMap3D = function(container) {
+  window.WMS.renderMap3D = async function(container) {
     console.log("WMS.renderMap3D called with container:", container);
     if (typeof THREE === 'undefined') {
       container.innerHTML = '<div class="card"><div class="card-body text-center"><h3 class="text-danger">Error: Librerías 3D no cargadas</h3><p>Recarga la página para intentarlo de nuevo.</p></div></div>';
       return;
     }
-    init3D(container);
+    await init3D(container);
   };
 
-  function init3D(el) {
+  async function init3D(el) {
     try {
       console.log("3D Check: Starting init3D");
       containerEl = el;
       el.innerHTML = '<div style="position:relative;width:100%;height:calc(100vh - var(--topbar-height));overflow:hidden;">' +
         '<div id="map3d-canvas" style="width:100%;height:100%;"></div>' +
         '<div style="position:absolute;top:var(--space-4);left:var(--space-4);z-index:10;pointer-events:none;">' +
-          '<h2 style="margin:0;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,0.5)">🗺️ MAP DEBUG</h2>' +
-          '<p style="color:var(--text-secondary);text-shadow:0 1px 2px rgba(0,0,0,0.5);margin-top:var(--space-1)">Visualización en tiempo real</p>' +
+          '<h2 style="margin:0;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,0.5)">🗺️ MAPA 3D</h2>' +
+          '<p style="color:var(--text-secondary);text-shadow:0 1px 2px rgba(0,0,0,0.5);margin-top:var(--space-1)">Estructura y Ocupación</p>' +
         '</div>' +
         '<div style="position:absolute;bottom:var(--space-4);right:var(--space-4);z-index:10;background:rgba(11,14,20,0.8);backdrop-filter:blur(8px);padding:var(--space-3);border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,0.05);color:#fff">' +
-          '<h4 style="margin-bottom:var(--space-2);font-size:var(--font-sm)">Leyenda de Ocupación</h4>' +
-          '<div style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--font-xs);margin-bottom:var(--space-1)"><span style="display:inline-block;width:12px;height:12px;background:#34d399;border-radius:2px"></span> Lleno / Alta</div>' +
-          '<div style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--font-xs);margin-bottom:var(--space-1)"><span style="display:inline-block;width:12px;height:12px;background:#fbbf24;border-radius:2px"></span> Parcial</div>' +
+          '<h4 style="margin-bottom:var(--space-2);font-size:var(--font-sm)">Leyenda</h4>' +
+          '<div style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--font-xs);margin-bottom:var(--space-1)"><span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:2px"></span> Ocupado</div>' +
+          '<div style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--font-xs);margin-bottom:var(--space-1)"><span style="display:inline-block;width:12px;height:12px;background:#3b82f6;border-radius:2px"></span> Stock Bajo</div>' +
+          '<div style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--font-xs);margin-bottom:var(--space-1)"><span style="display:inline-block;width:12px;height:12px;background:#ffeb3b;border-radius:2px"></span> Buscado</div>' +
           '<div style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--font-xs)"><span style="display:inline-block;width:12px;height:12px;background:#4a5568;border-radius:2px"></span> Vacío</div>' +
           '<button class="btn btn-secondary" style="margin-top:var(--space-3);width:100%;padding:var(--space-1);font-size:var(--font-xs)" id="resetCameraBtn">Centrar Cámara</button>' +
         '</div>' +
@@ -44,16 +45,15 @@ console.log("CRITICAL: map3d.js is parsing...");
       var height = rect.height || canvasWrapper.clientHeight || 600;
 
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0xffffff);
+      scene.background = new THREE.Color(0x0b0e14);
       
       camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-      camera.position.set(0, 30, 40);
+      camera.position.set(20, 30, 40);
       camera.lookAt(0, 0, 0);
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(width, height);
       renderer.setPixelRatio(window.devicePixelRatio);
-      renderer.domElement.style.border = "2px solid red";
       renderer.domElement.id = "three-canvas";
       canvasWrapper.appendChild(renderer.domElement);
 
@@ -66,14 +66,9 @@ console.log("CRITICAL: map3d.js is parsing...");
       var dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
       dirLight.position.set(20, 40, 20);
       scene.add(dirLight);
-      scene.add(new THREE.GridHelper(100, 50, 0x333333, 0x222222));
+      scene.add(new THREE.GridHelper(100, 50, 0x333333, 0x1a202c));
 
-      // Test Cube
-      var testBox = new THREE.Mesh(new THREE.BoxGeometry(2,2,2), new THREE.MeshBasicMaterial({color: 0xff0000}));
-      testBox.position.y = 1;
-      scene.add(testBox);
-
-      buildShelves();
+      await buildShelves();
       animate();
 
       window.addEventListener('resize', onWindowResize);
@@ -88,9 +83,8 @@ console.log("CRITICAL: map3d.js is parsing...");
     }
   }
 
-
   function resetCamera() {
-    camera.position.set(0, 30, 40);
+    camera.position.set(20, 30, 40);
     camera.lookAt(0, 0, 0);
     if (controls) controls.target.set(0,0,0);
   }
@@ -114,20 +108,23 @@ console.log("CRITICAL: map3d.js is parsing...");
     if (renderer && scene && camera) renderer.render(scene, camera);
   }
 
+  async function buildShelves() {
+    var [locations, inventory, products] = await Promise.all([
+      WMS.Locations.getAll(),
+      WMS.Inventory.getAll(),
+      WMS.Products.getAll()
+    ]);
+    
+    var searchInput = document.getElementById('globalSearch');
+    var searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
-  function buildShelves() {
-    var locations = WMS.Locations.getAll();
-    var inventory = WMS.Inventory.getAll();
-
-    // Clean previous shelves
     var toRemove = [];
     scene.children.forEach(function(c) {
-      if (c.userData && c.userData.isShelf) toRemove.push(c);
+      if (c.userData && (c.userData.isShelf || c.userData.isSlot)) toRemove.push(c);
     });
     toRemove.forEach(function(c) { scene.remove(c); });
 
-    // Group locations by shelf letter
-    var shelfMap = {}; // { 'A': [locs], 'B': [locs] }
+    var shelfMap = {};
     locations.forEach(function(loc) {
       var match = loc.code.match(/^([A-Z])-M(\d+)$/);
       if (match) {
@@ -138,27 +135,19 @@ console.log("CRITICAL: map3d.js is parsing...");
     });
 
     var letters = Object.keys(shelfMap).sort();
-    
-    // Layout parameters
     var shelfDepth = 1.8;
     var moduleWidth = 3;
     var rowHeight = 1.5;
     var aisleWidth = 4;
 
     function createTextSprite(text, color) {
-      var canvas = document.createElement('canvas');
-      canvas.width = 128;
-      canvas.height = 64;
+      var canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 64;
       var ctx = canvas.getContext('2d');
-      ctx.fillStyle = color || '#ffffff';
-      ctx.font = 'bold 36px Arial';
-      ctx.textAlign = 'center';
+      ctx.fillStyle = color || '#ffffff'; ctx.font = 'bold 36px Arial'; ctx.textAlign = 'center';
       ctx.fillText(text, 64, 44);
-      
       var texture = new THREE.CanvasTexture(canvas);
       var material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-      var sprite = new THREE.Sprite(material);
-      sprite.scale.set(1.5, 0.75, 1);
+      var sprite = new THREE.Sprite(material); sprite.scale.set(1.5, 0.75, 1);
       return sprite;
     }
     
@@ -181,76 +170,81 @@ console.log("CRITICAL: map3d.js is parsing...");
         var cubeZ = mod.z_pos !== undefined ? mod.z_pos : zPos;
         var cubeRot = mod.rotation !== undefined ? (mod.rotation * Math.PI / 180) : 0;
 
-        var numCols = mod.cols || 1;
         var numRows = mod.rows || 1;
+        var slotsPerRow = mod.slotsPerRow || 3;
         var totalHeight = numRows * rowHeight;
         
         var moduleGroup = new THREE.Group();
         moduleGroup.position.set(cubeX, totalHeight/2, cubeZ);
         moduleGroup.rotation.y = cubeRot;
 
-        // Compute color based on module stock
-        var stockQty = 0;
-        inventory.forEach(function(inv) { if (inv.locationId === mod.id) stockQty += (inv.quantity||0); });
-        var cap = mod.maxCapacity || (numCols * numRows * 3); 
-        var occupancy = stockQty / cap;
-        var color = 0x4a5568; 
-        if (stockQty > 0) color = 0xfbbf24;
-        if (occupancy >= 0.8) color = 0x34d399;
-
-        // Create the structure: multiple boxes for rows/cols
-        var cw = (moduleWidth - 0.2) / numCols;
-        var sw = cw / 3; // 3 slots per column cell
+        var sw = (moduleWidth - 0.2) / slotsPerRow;
         
         for (var r = 0; r < numRows; r++) {
-          for (var c = 0; c < numCols; c++) {
-            for (var s = 0; s < 3; s++) {
-              var slotGeom = new THREE.BoxGeometry(sw - 0.05, rowHeight - 0.1, shelfDepth);
-              var slotMat = new THREE.MeshLambertMaterial({ color: color, transparent: true, opacity: 0.7 });
-              var slotMesh = new THREE.Mesh(slotGeom, slotMat);
-              
-              // Local position inside the module
-              var lx = (-moduleWidth/2) + (c * cw) + (s * sw) + (sw/2);
-              var ly = (-totalHeight/2) + (r * rowHeight) + (rowHeight/2);
-              slotMesh.position.set(lx, ly, 0);
-              
-              // Edge
-              var edges = new THREE.EdgesGeometry(slotGeom);
-              var line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x1a202c, transparent: true, opacity: 0.4 }));
-              slotMesh.add(line);
-              
-              moduleGroup.add(slotMesh);
+          for (var s = 1; s <= slotsPerRow; s++) {
+            var slotInv = inventory.filter(function(inv) {
+              return inv.locationId === mod.id && 
+                     (parseInt(inv.row) === r || inv.row === String(r)) && 
+                     (parseInt(inv.pos) === s || inv.pos === String(s));
+            });
+            var stockQty = slotInv.reduce(function(sum, i) { return sum + (i.quantity||0); }, 0);
+            
+            var color = 0x4a5568; 
+            var hasLowStock = false;
+            var isSearched = false;
+
+            if (stockQty > 0) {
+              color = 0xef4444; 
+              slotInv.forEach(function(i) {
+                var p = products.find(function(prd){return prd.id===i.productId;});
+                if (p) {
+                  if (p.minStock > 0 && p.totalStock <= p.minStock) hasLowStock = true;
+                  if (searchTerm && (p.sku.toLowerCase().includes(searchTerm) || p.description.toLowerCase().includes(searchTerm))) isSearched = true;
+                }
+              });
             }
 
-            // Column Label on top floor
-            if (r === numRows - 1) {
-              var colLabel = createTextSprite('C' + (c + 1), '#a0aec0');
-              colLabel.position.set((-moduleWidth/2) + (c * cw) + (cw/2), (totalHeight/2) + 0.5, 0);
-              moduleGroup.add(colLabel);
-            }
+            if (isSearched) color = 0xffeb3b;
+            else if (hasLowStock) color = 0x3b82f6;
+
+            var slotGeom = new THREE.BoxGeometry(sw - 0.05, rowHeight - 0.1, shelfDepth);
+            var slotMat = new THREE.MeshLambertMaterial({ color: color, transparent: true, opacity: 0.8 });
+            var slotMesh = new THREE.Mesh(slotGeom, slotMat);
+            
+            var lx = (-moduleWidth/2) + ((s-1) * sw) + (sw/2) + 0.1;
+            var ly = (-totalHeight/2) + (r * rowHeight) + (rowHeight/2);
+            slotMesh.position.set(lx, ly, 0);
+            
+            var edges = new THREE.EdgesGeometry(slotGeom);
+            var line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x1a202c, transparent: true, opacity: 0.5 }));
+            slotMesh.add(line);
+            
+            slotMesh.userData = {
+              isSlot: true,
+              slotName: mod.code + '-F' + (r+1) + '-P' + s,
+              items: slotInv.map(function(i) {
+                  var p = products.find(function(prd){return prd.id===i.productId;});
+                  return (p ? p.sku : i.productId) + ': ' + i.quantity + ' uds';
+              })
+            };
+            moduleGroup.add(slotMesh);
           }
         }
 
-        moduleGroup.userData = {
-          isShelf: true,
-          code: mod.code,
-          name: mod.name,
-          stock: stockQty,
-          capacity: cap,
-          occupancy: occupancy
-        };
+        var modLabel = createTextSprite(mod.code, '#fff');
+        modLabel.position.set(0, (totalHeight/2) + 0.5, 0);
+        moduleGroup.add(modLabel);
 
+        moduleGroup.userData = { isShelf: true, code: mod.code };
         scene.add(moduleGroup);
       });
     });
   }
 
-
   function setupRaycaster(wrapper, cam, scn) {
     var raycaster = new THREE.Raycaster();
     var mouse = new THREE.Vector2();
     var tooltip = document.getElementById('tooltip3d');
-    var hoveredObj = null;
 
     wrapper.addEventListener('mousemove', function(e) {
       var rect = wrapper.getBoundingClientRect();
@@ -260,46 +254,30 @@ console.log("CRITICAL: map3d.js is parsing...");
       raycaster.setFromCamera(mouse, cam);
       var intersects = raycaster.intersectObjects(scn.children, true);
       
-      var found = false;
+      var found = null;
       for (var i=0; i<intersects.length; i++) {
-        var obj = intersects[i].object;
-        // Search up the group for userData
-        var target = obj;
-        while (target && (!target.userData || !target.userData.isShelf)) {
-          target = target.parent;
-        }
-
-        if (target && target.userData && target.userData.isShelf) {
-          found = true;
-          if (hoveredObj !== target) {
-            hoveredObj = target;
-            wrapper.style.cursor = 'pointer';
-          }
-
-          
-          tooltip.style.display = 'block';
-          tooltip.style.left = e.clientX + 'px';
-          tooltip.style.top = e.clientY + 'px';
-          tooltip.innerHTML = '<strong>' + target.userData.code + '</strong><br>' +
-                              '<span style="color:#a0aec0">' + target.userData.name + '</span><br>' +
-                              '<div style="margin-top:4px">Stock: <strong>' + WMS.formatNumber(target.userData.stock) + '</strong> uds</div>' +
-                              (target.userData.capacity ? '<div style="color:#a0aec0;font-size:10px">Capacidad máx: ' + WMS.formatNumber(target.userData.capacity) + '</div>' : '');
+        if (intersects[i].object.userData && intersects[i].object.userData.isSlot) {
+          found = intersects[i].object;
           break;
         }
       }
 
-      if (!found) {
-        hoveredObj = null;
+      if (found) {
+        wrapper.style.cursor = 'pointer';
+        tooltip.style.display = 'block';
+        tooltip.style.left = e.clientX + 'px';
+        tooltip.style.top = e.clientY + 'px';
+        tooltip.innerHTML = '<strong>' + found.userData.slotName + '</strong><br>' +
+                            (found.userData.items.length > 0 ? 
+                              '<div style="margin-top:4px;font-size:11px">' + found.userData.items.join('<br>') + '</div>' : 
+                              '<span style="color:#a0aec0">Vacío</span>');
+      } else {
         tooltip.style.display = 'none';
         wrapper.style.cursor = 'default';
       }
     });
 
-    wrapper.addEventListener('mouseleave', function() {
-      tooltip.style.display = 'none';
-      hoveredObj = null;
-    });
+    wrapper.addEventListener('mouseleave', function() { tooltip.style.display = 'none'; });
   }
-
 
 })();

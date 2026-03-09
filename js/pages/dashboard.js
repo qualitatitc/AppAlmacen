@@ -2,14 +2,17 @@
 // WMS - Dashboard Page (global namespace)
 // ============================================
 (function() {
-  WMS.renderDashboard = function(container) {
-    var user = WMS.getCurrentUser();
-    var tp = WMS.Stats.getTotalProducts(), ts = WMS.Stats.getTotalStock();
-    var occ = WMS.Stats.getOccupancyPercent(), low = WMS.Stats.getLowStockProducts();
-    var mt = WMS.Stats.getMovementsToday(), mm = WMS.Stats.getMovementsThisMonth();
-    var tl = WMS.Stats.getTotalLocations(), ol = WMS.Stats.getOccupiedLocations();
-    var tShelves = WMS.Stats.getTotalShelves(), tCap = WMS.Stats.getTotalSlots();
-    var recent = WMS.Movements.getRecent(8), prods = WMS.Products.getAll();
+  WMS.renderDashboard = async function(container) {
+    var user = await WMS.getCurrentUser();
+    var [tp, ts, occ, low, mt, mm, tl, ol, tShelves, tCap, recent, prods, inv] = await Promise.all([
+      WMS.Stats.getTotalProducts(), WMS.Stats.getTotalStock(),
+      WMS.Stats.getOccupancyPercent(), WMS.Stats.getLowStockProducts(),
+      WMS.Stats.getMovementsToday(), WMS.Stats.getMovementsThisMonth(),
+      WMS.Stats.getTotalLocations(), WMS.Stats.getOccupiedLocations(),
+      WMS.Stats.getTotalShelves(), WMS.Stats.getTotalSlots(),
+      WMS.Movements.getRecent(8), WMS.Products.getAll(), WMS.Inventory.getAll()
+    ]);
+
     var occClass = occ > 80 ? 'red' : occ > 50 ? 'orange' : 'green';
     var typeLabels = { entrada:'Entrada', salida:'Salida', ajuste:'Ajuste', transferencia:'Transferencia' };
 
@@ -19,7 +22,7 @@
     } else {
       lowHtml = '<div class="table-wrapper"><table class="table"><thead><tr><th>Código</th><th>Producto</th><th>Stock</th><th>Mínimo</th></tr></thead><tbody>';
       low.slice(0, 5).forEach(function(p) {
-        var st = WMS.Inventory.getTotalStock(p.id);
+        var st = inv.filter(function(i){return i.productId===p.id;}).reduce(function(s,i){return s+(i.quantity||0);}, 0);
         lowHtml += '<tr><td><span class="product-sku">' + p.sku + '</span></td><td>' + p.description + '</td><td><span class="badge badge-danger">' + WMS.formatNumber(st) + '</span></td><td>' + WMS.formatNumber(p.minStock) + '</td></tr>';
       });
       lowHtml += '</tbody></table></div>';
