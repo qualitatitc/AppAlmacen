@@ -5,8 +5,8 @@
   var SUPABASE_URL = 'https://rexttaeejotixrvkazre.supabase.co';
   var SUPABASE_ANON_KEY = 'sb_publishable_rDGzAfPHspwy7FvEAgN8Wg_29GEu_4U';
   
-  var supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  WMS.supabase = supabase;
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  WMS.supabase = sb;
 
   var KEYS = {
     users: 'users', products: 'products', locations: 'locations',
@@ -15,36 +15,36 @@
 
   // Helper to convert LocalStorage keys to Supabase table names
   async function getAll(table) {
-    const { data, error } = await supabase.from(table).select('*');
+    const { data, error } = await sb.from(table).select('*');
     if (error) { console.error('Error fetching ' + table, error); return []; }
     return data || [];
-  }
+}
 
   async function getById(table, id) {
-    const { data, error } = await supabase.from(table).select('*').eq('id', id).single();
+    const { data, error } = await sb.from(table).select('*').eq('id', id).single();
     if (error) { console.error('Error fetching record', error); return null; }
     return data;
-  }
+}
 
   async function create(table, item) {
     var n = Object.assign({}, item, { id: WMS.generateId(), createdAt: new Date().toISOString() });
-    const { data, error } = await supabase.from(table).insert([n]).select().single();
+    const { data, error } = await sb.from(table).insert([n]).select().single();
     if (error) { console.error('Error creating record', error); throw error; }
     return data;
-  }
+}
 
   async function update(table, id, upd) {
     var itm = Object.assign({}, upd, { updatedAt: new Date().toISOString() });
-    const { data, error } = await supabase.from(table).update(itm).eq('id', id).select().single();
+    const { data, error } = await sb.from(table).update(itm).eq('id', id).select().single();
     if (error) { console.error('Error updating record', error); throw error; }
     return data;
-  }
+}
 
   async function remove(table, id) {
-    const { error } = await supabase.from(table).delete().eq('id', id);
+    const { error } = await sb.from(table).delete().eq('id', id);
     if (error) { console.error('Error deleting record', error); throw error; }
     return true;
-  }
+}
 
   WMS.Products = {
     getAll: async function() { return await getAll(KEYS.products); },
@@ -197,23 +197,5 @@
       const all = await getAll(KEYS.movements);
       return all.filter(function(m) { return (m.timestamp||'').startsWith(mon); }).length;
     }
-  };
-
-  // Seed Data (Minimal for new setup)
-  WMS.seedData = function() {
-    if (localStorage.getItem(KEYS.seeded)) return;
-    
-    // Solo creamos el administrador por defecto al empezar
-    setAll(KEYS.users, [
-      { id:'admin001', email:'admin@wms.com', password:'Admin123!', name:'Administrador', role:'admin', status:'active', createdAt:new Date().toISOString() }
-    ]);
-    
-    // Inicializamos las tablas vacías
-    setAll(KEYS.products, []);
-    setAll(KEYS.locations, []);
-    setAll(KEYS.inventory, []);
-    setAll(KEYS.movements, []);
-    
-    localStorage.setItem(KEYS.seeded, 'true');
   };
 })();

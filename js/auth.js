@@ -4,8 +4,6 @@
 (function() {
   var SESSION_KEY = 'wms_session';
 
-  WMS.seedData(); // Init seed data
-
   WMS.getCurrentUser = async function() {
     try {
       var s = JSON.parse(localStorage.getItem(SESSION_KEY));
