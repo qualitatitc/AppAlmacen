@@ -4,13 +4,14 @@
 (function() {
   WMS.renderDashboard = async function(container) {
     var user = await WMS.getCurrentUser();
-    var [tp, ts, occ, low, mt, mm, tl, ol, tShelves, tCap, recent, prods, inv] = await Promise.all([
+    var [tp, ts, occ, low, mt, mm, tl, ol, tShelves, tCap, recent, prods, inv, locs] = await Promise.all([
       WMS.Stats.getTotalProductsInWarehouse(), WMS.Stats.getTotalStock(),
       WMS.Stats.getOccupancyPercent(), WMS.Stats.getLowStockProducts(),
       WMS.Stats.getMovementsToday(), WMS.Stats.getMovementsThisMonth(),
       WMS.Stats.getTotalLocations(), WMS.Stats.getOccupiedSlots(),
       WMS.Stats.getTotalShelves(), WMS.Stats.getTotalSlots(),
-      WMS.Movements.getRecent(8), WMS.Products.getAll(), WMS.Inventory.getAll()
+      WMS.Movements.getRecent(8), WMS.Products.getAll(), WMS.Inventory.getAll(),
+      WMS.Locations.getAll()
     ]);
 
     var occClass = occ > 80 ? 'red' : occ > 50 ? 'orange' : 'green';
@@ -32,10 +33,19 @@
     if (recent.length === 0) {
       mvHtml = '<div class="empty-state" style="padding:var(--space-6)"><p class="text-muted">No hay movimientos registrados</p></div>';
     } else {
-      mvHtml = '<div class="table-wrapper"><table class="table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cantidad</th><th>Referencia</th></tr></thead><tbody>';
+      var formatLoc = function(val) {
+        if (!val) return '—';
+        var p = val.split('|'), l = locs.find(function(ll){return ll.id===p[0];});
+        var d = (l?l.code:p[0]);
+        if (p[1]||p[2]) d += (p[1]?'-F'+p[1]:'') + (p[2]?'-P'+p[2]:'');
+        return d;
+      };
+      mvHtml = '<div class="table-wrapper"><table class="table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th>Cantidad</th><th>Ubicación</th><th>Referencia</th></tr></thead><tbody>';
       recent.forEach(function(m) {
         var prod = prods.find(function(p) { return p.id === m.productId; });
-        mvHtml += '<tr><td>' + WMS.formatDateTime(m.timestamp) + '</td><td><span class="movement-type ' + m.type + '">' + (typeLabels[m.type]||m.type) + '</span></td><td>' + (prod ? prod.description : m.productId) + '</td><td>' + (m.type==='salida'?'-':'+') + WMS.formatNumber(m.quantity) + '</td><td>' + (m.reference||'—') + '</td></tr>';
+        var dF = formatLoc(m.locationFrom), dT = formatLoc(m.locationTo);
+        var locD = m.type==='entrada' ? '→ '+dT : m.type==='salida' ? dF+' →' : dF+' → '+dT;
+        mvHtml += '<tr><td>' + WMS.formatDateTime(m.timestamp) + '</td><td><span class="movement-type ' + m.type + '">' + (typeLabels[m.type]||m.type) + '</span></td><td>' + (prod ? prod.description : m.productId) + '</td><td>' + (m.type==='salida'?'-':'+') + WMS.formatNumber(m.quantity) + '</td><td style="font-size:var(--font-xs)">' + locD + '</td><td>' + (m.reference||'—') + '</td></tr>';
       });
       mvHtml += '</tbody></table></div>';
     }

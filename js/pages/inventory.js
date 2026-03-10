@@ -239,8 +239,19 @@
           deHtml += '<div class="stock-location-item"><div><span class="stock-location-code">' + detail + '</span><span class="text-muted" style="font-size:var(--font-xs);margin-left:var(--space-2)">' + (loc?loc.name:'') + '</span>' + (e.lot?'<span class="badge badge-info" style="margin-left:var(--space-2)">Lote: '+e.lot+'</span>':'') + '</div><div><span class="stock-location-qty">' + WMS.formatNumber(e.quantity) + '</span></div></div>';
         });
         if (recMoves.length > 0) {
-          deHtml += '<h4 style="color:var(--text-secondary);font-size:var(--font-sm);margin:var(--space-5) 0 var(--space-3)">Movimientos Recientes</h4><div class="table-wrapper"><table class="table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Referencia</th></tr></thead><tbody>';
-          recMoves.forEach(function(m) { deHtml += '<tr><td>' + WMS.formatDateTime(m.timestamp) + '</td><td><span class="movement-type ' + m.type + '">' + (typeLabels[m.type]||m.type) + '</span></td><td>' + (m.type==='salida'?'-':'+') + WMS.formatNumber(m.quantity) + '</td><td>' + (m.reference||'—') + '</td></tr>'; });
+          var formatLoc = function(val) {
+            if (!val) return '—';
+            var p = val.split('|'), l = locs.find(function(ll){return ll.id===p[0];});
+            var d = (l?l.code:p[0]);
+            if (p[1]||p[2]) d += (p[1]?'-F'+p[1]:'') + (p[2]?'-P'+p[2]:'');
+            return d;
+          };
+          deHtml += '<h4 style="color:var(--text-secondary);font-size:var(--font-sm);margin:var(--space-5) 0 var(--space-3)">Movimientos Recientes</h4><div class="table-wrapper"><table class="table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Ubicación</th><th>Referencia</th></tr></thead><tbody>';
+          recMoves.forEach(function(m) { 
+            var dF = formatLoc(m.locationFrom), dT = formatLoc(m.locationTo);
+            var locD = m.type==='entrada' ? '→ '+dT : m.type==='salida' ? dF+' →' : dF+' → '+dT;
+            deHtml += '<tr><td>' + WMS.formatDateTime(m.timestamp) + '</td><td><span class="movement-type ' + m.type + '">' + (typeLabels[m.type]||m.type) + '</span></td><td>' + (m.type==='salida'?'-':'+') + WMS.formatNumber(m.quantity) + '</td><td style="font-size:var(--font-xs)">' + locD + '</td><td>' + (m.reference||'—') + '</td></tr>'; 
+          });
           deHtml += '</tbody></table></div>';
         }
         deHtml += '</div>';
