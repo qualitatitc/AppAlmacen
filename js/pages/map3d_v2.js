@@ -10,16 +10,16 @@
   console.log("Map3D IIFE executing...");
 
   window.WMS = window.WMS || {};
-  window.WMS.renderMap3D = function(container) {
+  window.WMS.renderMap3D = async function(container) {
     console.log("WMS.renderMap3D called with container:", container);
     if (typeof THREE === 'undefined') {
       container.innerHTML = '<div class="card"><div class="card-body text-center"><h3 class="text-danger">Error: Librerías 3D no cargadas</h3><p>Recarga la página para intentarlo de nuevo.</p></div></div>';
       return;
     }
-    init3D(container);
+    await init3D(container);
   };
 
-  function init3D(el) {
+  async function init3D(el) {
     try {
       console.log("3D Check: Starting init3D");
       containerEl = el;
@@ -81,7 +81,7 @@
       scene.add(new THREE.GridHelper(100, 50, 0x333333, 0x222222));
 
 
-      buildShelves();
+      await buildShelves();
       animate();
 
       window.addEventListener('resize', onWindowResize);
@@ -128,9 +128,14 @@
   }
 
 
-  function buildShelves() {
-    var locations = WMS.Locations.getAll();
-    var inventory = WMS.Inventory.getAll();
+  async function buildShelves() {
+    var [locations, inventory, products, lowStockProducts] = await Promise.all([
+      WMS.Locations.getAll(),
+      WMS.Inventory.getAll(),
+      WMS.Products.getAll(),
+      WMS.Stats.getLowStockProducts()
+    ]);
+    var lowStockProdIds = lowStockProducts.map(function(p) { return p.id; });
 
     // Clean previous shelves
     var toRemove = [];
@@ -206,8 +211,6 @@
         moduleGroup.position.set(cubeX, totalHeight/2, cubeZ);
         moduleGroup.rotation.y = cubeRot;
 
-        var products = WMS.Products.getAll();
-        var lowStockProdIds = WMS.Stats.getLowStockProducts().map(function(p){ return p.id; });
         var modInventory = inventory.filter(function(inv) { return inv.locationId === mod.id; });
 
         // Create the structure: N slots per row
