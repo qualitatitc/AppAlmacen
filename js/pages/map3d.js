@@ -221,7 +221,7 @@ console.log("CRITICAL: map3d.js is parsing...");
             
             slotMesh.userData = {
               isSlot: true,
-              slotName: mod.code + '-F' + (r+1) + '-P' + s,
+              slotName: mod.code + '-F' + r + '-P' + s,
               items: slotInv.map(function(i) {
                   var p = products.find(function(prd){return prd.id===i.productId;});
                   return (p ? p.sku : i.productId) + ': ' + i.quantity + ' uds';

@@ -99,7 +99,7 @@
       var m = locations.find(l => l.id === mid);
       if (!m) return;
       for (var i = 0; i < (m.rows || 1); i++) {
-        rowSel.innerHTML += `<option value="${i}">F${i + 1}</option>`;
+        rowSel.innerHTML += `<option value="${i}">F${i}</option>`;
       }
     });
 
@@ -166,7 +166,7 @@
       entries.forEach(function(en) {
         var loc = locations.find(function(l){return l.id===en.locationId;});
         var detail = (loc?loc.code:en.locationId);
-        if (en.row||en.pos) detail += (en.row?'-F'+(parseInt(en.row)+1):'') + (en.pos?'-P'+en.pos:'');
+        if (en.row||en.pos) detail += (en.row?'-F'+en.row:'') + (en.pos?'-P'+en.pos:'');
         var txt = detail + ' - Disp: ' + en.quantity + ' uds' + (en.lot?' (Lote: '+en.lot+')':'');
         var val = en.locationId + '|' + (en.lot||'') + '|' + (en.row||'') + '|' + (en.pos||'');
         sel.innerHTML += '<option value="' + val + '">' + txt + '</option>';
@@ -235,7 +235,7 @@
         else entries.forEach(function(e) {
           var loc = locs.find(function(l){return l.id===e.locationId;});
           var detail = (loc?loc.code:e.locationId);
-          if (e.row||e.pos) detail += (e.row?'-F'+(parseInt(e.row)+1):'') + (e.pos?'-P'+e.pos:'');
+          if (e.row||e.pos) detail += (e.row?'-F'+e.row:'') + (e.pos?'-P'+e.pos:'');
           deHtml += '<div class="stock-location-item"><div><span class="stock-location-code">' + detail + '</span><span class="text-muted" style="font-size:var(--font-xs);margin-left:var(--space-2)">' + (loc?loc.name:'') + '</span>' + (e.lot?'<span class="badge badge-info" style="margin-left:var(--space-2)">Lote: '+e.lot+'</span>':'') + '</div><div><span class="stock-location-qty">' + WMS.formatNumber(e.quantity) + '</span></div></div>';
         });
         if (recMoves.length > 0) {
@@ -262,7 +262,7 @@
         if (!val) return '—';
         var p = val.split('|'), l = locs.find(function(ll){return ll.id===p[0];});
         var d = (l?l.code:p[0]);
-        if (p[1]||p[2]) d += (p[1]?'-F'+(parseInt(p[1])+1):'') + (p[2]?'-P'+p[2]:'');
+        if (p[1]||p[2]) d += (p[1]?'-F'+p[1]:'') + (p[2]?'-P'+p[2]:'');
         return d;
       };
       var dF = formatLoc(m.locationFrom), dT = formatLoc(m.locationTo);

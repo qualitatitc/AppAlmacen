@@ -1,6 +1,6 @@
 // ============================================
 // WMS - Locations Page (global namespace)
-// ============================================
+// VERSION 1.1 - Row base zero
 (function() {
   WMS.renderLocations = async function(container) {
     var [locations, inv, prods] = await Promise.all([
@@ -56,7 +56,7 @@
         '<div class="tree-item has-children">' +
           '<span class="tree-toggle">▶</span>' +
           '<span class="tree-icon">📑</span>' +
-          '<span class="tree-label">Fila F' + (rowIndex + 1) + '</span>' +
+          '<span class="tree-label">Fila F' + rowIndex + '</span>' +
           '<span class="badge ' + badgeClass + '">' + WMS.formatNumber(rowQty) + ' uds</span>' +
         '</div>' +
         '<div class="tree-children hidden">' + positionsHtml + '</div>' +

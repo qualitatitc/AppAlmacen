@@ -2,8 +2,8 @@
 // WMS - Data Access Layer (global namespace)
 // ============================================
 (function() {
-  var SUPABASE_URL = 'https://rexttaeejotixrvkazre.supabase.co';
-  var SUPABASE_ANON_KEY = 'sb_publishable_rDGzAfPHspwy7FvEAgN8Wg_29GEu_4U';
+  var SUPABASE_URL = 'https://jjumuwwalquiimfvzwgs.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqdW11d3dhbHF1aWltZnZ6d2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNzQ4NDYsImV4cCI6MjA4ODc1MDg0Nn0.1-QncUnJV_OocW4t2bE3NNYiIQl0IhZaxRyW99FCMl8';
   
   var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   WMS.supabase = sb;
