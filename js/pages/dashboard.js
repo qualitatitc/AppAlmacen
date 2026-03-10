@@ -5,10 +5,10 @@
   WMS.renderDashboard = async function(container) {
     var user = await WMS.getCurrentUser();
     var [tp, ts, occ, low, mt, mm, tl, ol, tShelves, tCap, recent, prods, inv] = await Promise.all([
-      WMS.Stats.getTotalProducts(), WMS.Stats.getTotalStock(),
+      WMS.Stats.getTotalProductsInWarehouse(), WMS.Stats.getTotalStock(),
       WMS.Stats.getOccupancyPercent(), WMS.Stats.getLowStockProducts(),
       WMS.Stats.getMovementsToday(), WMS.Stats.getMovementsThisMonth(),
-      WMS.Stats.getTotalLocations(), WMS.Stats.getOccupiedLocations(),
+      WMS.Stats.getTotalLocations(), WMS.Stats.getOccupiedSlots(),
       WMS.Stats.getTotalShelves(), WMS.Stats.getTotalSlots(),
       WMS.Movements.getRecent(8), WMS.Products.getAll(), WMS.Inventory.getAll()
     ]);
@@ -42,9 +42,9 @@
 
     container.innerHTML = '<div class="page-header"><div><h1 class="page-title">Dashboard</h1><p class="page-subtitle">Bienvenido, ' + (user?user.name:'Usuario') + '. Resumen operativo del almacén.</p></div></div>'
       + '<div class="kpi-grid" style="margin-bottom:var(--space-6);">'
-      + '<div class="kpi-card animate-fade-in" style="animation-delay:0ms"><div class="kpi-card-icon blue">📦</div><div class="kpi-card-value">' + WMS.formatNumber(tp) + '</div><div class="kpi-card-label">Productos en Catálogo</div></div>'
+      + '<div class="kpi-card animate-fade-in" style="animation-delay:0ms"><div class="kpi-card-icon blue">📦</div><div class="kpi-card-value">' + WMS.formatNumber(tp) + '</div><div class="kpi-card-label">Productos en el Almacén</div></div>'
       + '<div class="kpi-card animate-fade-in" style="animation-delay:80ms"><div class="kpi-card-icon green">📊</div><div class="kpi-card-value">' + WMS.formatNumber(ts) + '</div><div class="kpi-card-label">Unidades en Stock</div></div>'
-      + '<div class="kpi-card animate-fade-in" style="animation-delay:160ms"><div class="kpi-card-icon ' + (occ>80?'red':occ>50?'orange':'purple') + '">📍</div><div class="kpi-card-value">' + occ + '%</div><div class="kpi-card-label">Ocupación del Almacén</div><div style="margin-top:var(--space-2)"><div class="progress-bar"><div class="progress-bar-fill ' + occClass + '" style="width:' + occ + '%"></div></div><div style="font-size:var(--font-xs);color:var(--text-muted);margin-top:var(--space-1)">' + ol + ' / ' + tl + ' posiciones</div></div></div>'
+      + '<div class="kpi-card animate-fade-in" style="animation-delay:160ms"><div class="kpi-card-icon ' + (occ>80?'red':occ>50?'orange':'purple') + '">📍</div><div class="kpi-card-value">' + occ + '%</div><div class="kpi-card-label">Ocupación del Almacén</div><div style="margin-top:var(--space-2)"><div class="progress-bar"><div class="progress-bar-fill ' + occClass + '" style="width:' + occ + '%"></div></div><div style="font-size:var(--font-xs);color:var(--text-muted);margin-top:var(--space-1)">' + ol + ' / ' + tCap + ' huecos ocupados</div></div></div>'
       + '<div class="kpi-card animate-fade-in" style="animation-delay:240ms"><div class="kpi-card-icon ' + (low.length>0?'red':'green') + '">⚠️</div><div class="kpi-card-value">' + low.length + '</div><div class="kpi-card-label">Alertas Stock Bajo</div>' + (low.length>0?'<span class="kpi-card-trend down">Requiere atención</span>':'<span class="kpi-card-trend up">Todo OK</span>') + '</div>'
       + '<div class="kpi-card animate-fade-in" style="animation-delay:320ms"><div class="kpi-card-icon blue">🏗️</div><div class="kpi-card-value">' + tShelves + '</div><div class="kpi-card-label">Estanterías</div><div style="font-size:var(--font-xs);color:var(--text-muted);margin-top:var(--space-1)">' + tl + ' módulos totales</div></div>'
       + '<div class="kpi-card animate-fade-in" style="animation-delay:400ms"><div class="kpi-card-icon purple">📥</div><div class="kpi-card-value">' + WMS.formatNumber(tCap) + '</div><div class="kpi-card-label">Capacidad (Pallets)</div><div style="font-size:var(--font-xs);color:var(--text-muted);margin-top:var(--space-1)">Huecos configurados</div></div>'

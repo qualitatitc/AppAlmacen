@@ -78,7 +78,6 @@
       var dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
       dirLight.position.set(20, 40, 20);
       scene.add(dirLight);
-      scene.add(new THREE.GridHelper(100, 50, 0x333333, 0x222222));
 
 
       await buildShelves();
@@ -137,10 +136,10 @@
     ]);
     var lowStockProdIds = lowStockProducts.map(function(p) { return p.id; });
 
-    // Clean previous shelves
+    // Clean previous shelves and environment
     var toRemove = [];
     scene.children.forEach(function(c) {
-      if (c.userData && (c.userData.isShelfGroup || c.userData.isShelf || c.userData.isSlot)) toRemove.push(c);
+      if (c.userData && (c.userData.isShelfGroup || c.userData.isShelf || c.userData.isSlot || c.userData.isEnvironment)) toRemove.push(c);
     });
     toRemove.forEach(function(c) { scene.remove(c); });
 
@@ -289,6 +288,44 @@
         shelfGroup.add(moduleGroup);
       });
     });
+
+    // Create dynamic floor/grid based on module positions
+    var box = new THREE.Box3();
+    scene.traverse(function(node) {
+      if (node.userData && (node.userData.isShelf || node.userData.isSlot)) {
+        box.expandByObject(node);
+      }
+    });
+
+    if (!box.isEmpty()) {
+      var size = new THREE.Vector3();
+      box.getSize(size);
+      var center = new THREE.Vector3();
+      box.getCenter(center);
+      
+      var margin = 10;
+      var gridWidth = Math.max(size.x, size.z) + margin;
+      var gridDiv = Math.round(gridWidth);
+      
+      var grid = new THREE.GridHelper(gridWidth, gridDiv, 0x333333, 0x222222);
+      grid.position.set(center.x, 0, center.z);
+      grid.userData = { isEnvironment: true };
+      scene.add(grid);
+
+      var floorGeom = new THREE.PlaneGeometry(gridWidth, gridWidth);
+      var floorMat = new THREE.MeshPhongMaterial({ color: 0x07090d, side: THREE.DoubleSide });
+      var floor = new THREE.Mesh(floorGeom, floorMat);
+      floor.rotation.x = Math.PI / 2;
+      floor.position.set(center.x, -0.01, center.z);
+      floor.userData = { isEnvironment: true };
+      scene.add(floor);
+      
+      // Initially focus camera if everything is new
+      if (locations.length > 0 && locations.every(l => l.x_pos === null)) {
+         camera.position.set(center.x, 30, center.z + 40);
+         controls.target.set(center.x, 0, center.z);
+      }
+    }
   }
 
 

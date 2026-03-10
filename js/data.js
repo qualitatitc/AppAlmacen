@@ -151,7 +151,10 @@
   };
 
   WMS.Stats = {
-    getTotalProducts: async function() { return (await getAll(KEYS.products)).length; },
+    getTotalProductsInWarehouse: async function() {
+      const inv = await getAll(KEYS.inventory);
+      var s = new Set(); inv.filter(function(i){ return (i.quantity||0)>0; }).forEach(function(i){ s.add(i.productId); }); return s.size;
+    },
     getTotalStock: async function() {
       return (await getAll(KEYS.inventory)).reduce(function(s,i) { return s+(i.quantity||0); }, 0);
     },
@@ -172,12 +175,17 @@
         return sum + ((l.rows||1) * (l.slotsPerRow||3));
       }, 0);
     },
-    getOccupiedLocations: async function() {
+    getOccupiedSlots: async function() {
       const inv = await getAll(KEYS.inventory);
-      var s = new Set(); inv.filter(function(i){ return (i.quantity||0)>0; }).forEach(function(i){ s.add(i.locationId); }); return s.size;
+      var s = new Set(); 
+      inv.filter(function(i){ return (i.quantity||0) > 0; }).forEach(function(i){ 
+        // Unique key for a slot: locationId + row + position
+        s.add(i.locationId + '-' + i.row + '-' + i.pos); 
+      }); 
+      return s.size;
     },
     getOccupancyPercent: async function() {
-      var [occ, tot] = await Promise.all([WMS.Stats.getOccupiedLocations(), WMS.Stats.getTotalLocations()]);
+      var [occ, tot] = await Promise.all([WMS.Stats.getOccupiedSlots(), WMS.Stats.getTotalSlots()]);
       if(tot===0) return 0;
       return Math.round((occ/tot)*100);
     },
