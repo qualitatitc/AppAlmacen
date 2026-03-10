@@ -140,9 +140,14 @@
     // Clean previous shelves
     var toRemove = [];
     scene.children.forEach(function(c) {
-      if (c.userData && c.userData.isShelf) toRemove.push(c);
+      if (c.userData && (c.userData.isShelfGroup || c.userData.isShelf || c.userData.isSlot)) toRemove.push(c);
     });
     toRemove.forEach(function(c) { scene.remove(c); });
+
+    if (locations.length === 0) {
+      WMS.showToast('No hay ubicaciones configuradas para mostrar en el mapa.', 'info');
+      return;
+    }
 
     // Group locations by shelf letter
     var shelfMap = {}; // { 'A': [locs], 'B': [locs] }
@@ -256,7 +261,8 @@
               pos: s + 1,
               stock: stockQty,
               skus: slotSkus,
-              originalColor: color
+              originalColor: color,
+              slotName: mod.code + '-F' + r + '-P' + (s + 1)
             };
 
             // Edge
@@ -315,7 +321,7 @@
           tooltip.style.display = 'block';
           tooltip.style.left = e.clientX + 'px';
           tooltip.style.top = e.clientY + 'px';
-          tooltip.innerHTML = '<strong>' + target.userData.locationCode + '</strong><br>' +
+          tooltip.innerHTML = '<strong>' + (target.userData.slotName || target.userData.locationCode) + '</strong><br>' +
                               '<span style="color:#a0aec0">Fila: ' + target.userData.row + ', Hueco: ' + target.userData.pos + '</span><br>' +
                               '<div style="margin-top:4px">Stock: <strong>' + WMS.formatNumber(target.userData.stock) + '</strong> uds</div>' +
                               (target.userData.skus.length > 0 ? '<div style="color:var(--primary-light);font-size:10px;margin-top:2px">Piezas: ' + target.userData.skus.join(', ') + '</div>' : '');
