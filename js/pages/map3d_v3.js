@@ -352,6 +352,7 @@
 
     transformControls = new THREE.TransformControls(camera, renderer.domElement);
     transformControls.setMode('translate'); 
+    transformControls.showY = false; // Disable vertical movement
     
     transformControls.addEventListener('dragging-changed', function(event) {
       if (controls) controls.enabled = !event.value;
@@ -441,13 +442,11 @@
       if (hitGizmo) return;
 
       if (hitShelf) {
-        if (selectedObject === hitShelf) {
-          var currentMode = transformControls.mode;
-          transformControls.setMode(currentMode === 'translate' ? 'rotate' : 'translate');
-        } else {
+        if (selectedObject !== hitShelf) {
           selectedObject = hitShelf;
           transformControls.attach(hitShelf);
           transformControls.setMode('translate');
+          transformControls.showY = false;
         }
       } else {
         selectedObject = null;
