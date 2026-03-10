@@ -204,9 +204,9 @@
 
       mods.forEach(function(mod, modIdx) {
         var xPos = startX + (modIdx * moduleWidth) + (moduleWidth/2);
-        var cubeX = mod.x_pos !== undefined ? mod.x_pos : xPos;
-        var cubeZ = mod.z_pos !== undefined ? mod.z_pos : zPos;
-        var cubeRot = mod.rotation !== undefined ? (mod.rotation * Math.PI / 180) : 0;
+        var cubeX = (mod.x_pos !== undefined && mod.x_pos !== null) ? mod.x_pos : xPos;
+        var cubeZ = (mod.z_pos !== undefined && mod.z_pos !== null) ? mod.z_pos : zPos;
+        var cubeRot = (mod.rotation !== undefined && mod.rotation !== null) ? (mod.rotation * Math.PI / 180) : 0;
 
         var numRows = mod.rows || 1;
         var slotsPerRow = mod.slotsPerRow || 3;
