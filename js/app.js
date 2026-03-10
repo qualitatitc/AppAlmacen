@@ -11,6 +11,12 @@
     if (WMS.isAuthenticated()) {
       var user = await WMS.getCurrentUser();
       if (!user) { WMS.logout(); return; }
+      
+      // Force shell refresh if role changed while in session
+      var shellRoleEl = document.querySelector('.sidebar-user-role');
+      if (shellRoleEl && shellRoleEl.textContent !== WMS.getRoleLabel(user.role)) {
+        await renderShell();
+      }
     }
 
     if (!WMS.isAuthenticated() && path !== '/login') { window.location.hash = '#/login'; return; }
