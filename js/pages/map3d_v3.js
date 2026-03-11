@@ -48,7 +48,7 @@
           '<div id="edit-actions" style="display:none;flex-direction:column;gap:var(--space-2)">' +
             '<button class="btn btn-secondary" id="rotate180Btn" style="display:none">🔄 Girar 180°</button>' +
             '<button class="btn btn-success" id="saveLayoutBtn">💾 Guardar Cambios</button>' +
-            '<div id="selection-hint" style="background:rgba(0,0,0,0.8);padding:var(--space-2);border-radius:var(--radius-md);font-size:var(--font-xs);color:#34d399">Selecciona un módulo para moverlo</div>' +
+            '<div id="selection-hint" style="background:rgba(0,0,0,0.8);padding:var(--space-2);border-radius:var(--radius-md);font-size:var(--font-xs);color:#34d399">Selecciona una estantería completa para moverla o girarla</div>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -435,10 +435,10 @@
       var hint = document.getElementById('selection-hint');
       if (hint) {
         if (isSelected) {
-          hint.innerHTML = 'Módulo <strong>' + (obj.userData.code || '') + '</strong> seleccionado.<br>Usa las flechas para mover o el botón para girar.';
+          hint.innerHTML = 'Estantería <strong>' + (obj.userData.letter || '') + '</strong> seleccionada.<br>Usa las flechas para mover o el botón para girar.';
           hint.style.color = '#facc15';
         } else {
-          hint.innerHTML = 'Selecciona un módulo para moverlo';
+          hint.innerHTML = 'Selecciona una estantería completa para moverla o girarla';
           hint.style.color = '#34d399';
         }
       }
@@ -505,10 +505,10 @@
         if (hitGizmo) break;
 
         p = obj;
-        while (p && (!p.userData || !p.userData.isShelf)) {
+        while (p && (!p.userData || !p.userData.isShelfGroup)) {
           p = p.parent;
         }
-        if (p && p.userData && p.userData.isShelf) {
+        if (p && p.userData && p.userData.isShelfGroup) {
           hitShelf = p;
           break;
         }
