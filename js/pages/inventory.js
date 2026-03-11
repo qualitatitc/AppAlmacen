@@ -341,40 +341,125 @@
     var pEl = document.getElementById('movPagination');
     if (pEl) WMS.renderPagination(pEl, pg, async function(p) { movPage = p; await renderMovements(el); });
   }
+
+  // ---- MANUAL INVENTORY (SESSIONS) ----
+  var inventorySession = null; // { startTime: Date, counts: { productId: { count: N, system: N } } }
+
   async function renderManual(el) {
     var [prods, summary] = await Promise.all([WMS.Products.getAll(), WMS.Inventory.getStockSummary()]);
     
+    if (!inventorySession) {
+      el.innerHTML = '<div class="card animate-fade-in" style="text-align:center;padding:var(--space-12)">' +
+        '<div style="font-size:4rem;margin-bottom:var(--space-4)">📝</div>' +
+        '<h3>Nuevo Inventario General</h3>' +
+        '<p class="text-muted" style="max-width:400px;margin:0 auto var(--space-6)">Inicia una sesión de inventario para contar físicamente los productos del almacén y compararlos con el stock del sistema.</p>' +
+        '<button class="btn btn-primary" id="startInventoryBtn">Iniciar Conteo de Inventario</button>' +
+        '</div>';
+      
+      document.getElementById('startInventoryBtn').addEventListener('click', function() {
+        inventorySession = { startTime: new Date(), counts: {} };
+        renderManual(el);
+      });
+      return;
+    }
+
     var rows = '';
     prods.forEach(function(p) {
       var s = summary.find(function(x){return x.id === p.id;});
       var st = s ? s.totalStock : 0;
+      var countData = inventorySession.counts[p.id] || { count: 0, system: st };
+      var diff = countData.count - st;
+      var diffClass = diff === 0 ? 'text-success' : 'text-danger';
+      var diffIcon = diff === 0 ? '✅' : (diff > 0 ? '➕' : '➖');
+
       rows += '<tr>'
             + '<td><span class="product-sku">' + p.sku + '</span></td>'
             + '<td>' + p.description + '</td>'
             + '<td>' + WMS.formatNumber(st) + '</td>'
-            + '<td><div style="display:flex;gap:var(--space-2);align-items:center"><input type="number" class="form-input" style="width:100px" data-id="' + p.id + '" value="' + (p.inventario||0) + '"><button class="btn btn-primary btn-sm update-inv-btn" data-id="' + p.id + '">Guardar</button></div></td>'
+            + '<td><input type="number" class="form-input inv-count-input" style="width:100px" data-id="' + p.id + '" value="' + countData.count + '"></td>'
+            + '<td class="' + diffClass + '" style="font-weight:600">' + (diff !== 0 ? diffIcon + ' ' : '') + WMS.formatNumber(diff) + '</td>'
             + '</tr>';
     });
 
-    el.innerHTML = '<div class="card animate-fade-in"><div class="card-header"><h3 class="card-title">📝 Inventario Manual</h3><p class="text-muted" style="font-size:var(--font-xs)">Introduce aquí el conteo físico de los productos para contrastar con el sistema.</p></div>'
-      + '<div class="table-wrapper"><table class="table"><thead><tr><th>Código</th><th>Descripción</th><th>Stock Sistema</th><th>Inventario Manual</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-      + '</div>';
+    el.innerHTML = '<div class="card animate-fade-in">' +
+      '<div class="card-header">' +
+        '<div><h3 class="card-title">📝 Inventario en Curso</h3><p class="text-muted" style="font-size:var(--font-xs)">Iniciado el ' + WMS.formatDateTime(inventorySession.startTime) + '</p></div>' +
+        '<div style="display:flex;gap:var(--space-2)">' +
+          '<button class="btn btn-ghost btn-sm" id="cancelInventoryBtn">Cancelar</button>' +
+          '<button class="btn btn-success btn-sm" id="finishInventoryBtn">Finalizar y Regularizar</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="table-wrapper"><table class="table"><thead><tr><th>Código</th><th>Descripción</th><th>Stock Sistema</th><th>Conteo Físico</th><th>Diferencia</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '</div>';
 
-    el.querySelectorAll('.update-inv-btn').forEach(function(btn) {
-      btn.addEventListener('click', async function() {
-        var id = btn.dataset.id;
-        var input = el.querySelector('input[data-id="' + id + '"]');
+    // Handle Input Changes
+    el.querySelectorAll('.inv-count-input').forEach(function(input) {
+      input.addEventListener('input', function() {
+        var id = input.dataset.id;
         var val = parseInt(input.value) || 0;
-        btn.disabled = true;
-        try {
-          await WMS.Products.update(id, { inventario: val });
-          WMS.showToast('Inventario actualizado para ' + id, 'success');
-        } catch (err) {
-          WMS.showToast('Error al actualizar: ' + err.message, 'error');
-        } finally {
-          btn.disabled = false;
-        }
+        var s = summary.find(function(x){return x.id === id;});
+        inventorySession.counts[id] = { count: val, system: s ? s.totalStock : 0 };
+        
+        // Update difference cell in real-time
+        var tr = input.closest('tr');
+        var diffCell = tr.querySelector('td:last-child');
+        var diff = val - (s ? s.totalStock : 0);
+        diffCell.className = diff === 0 ? 'text-success' : 'text-danger';
+        diffCell.innerHTML = (diff !== 0 ? (diff > 0 ? '➕ ' : '➖ ') : '') + WMS.formatNumber(diff);
       });
+    });
+
+    document.getElementById('cancelInventoryBtn').addEventListener('click', function() {
+      if (confirm('¿Cancelar el inventario actual? Se perderán todos los datos introducidos.')) {
+        inventorySession = null;
+        renderManual(el);
+      }
+    });
+
+    document.getElementById('finishInventoryBtn').addEventListener('click', async function() {
+      var hasDiff = Object.keys(inventorySession.counts).some(id => inventorySession.counts[id].count !== inventorySession.counts[id].system);
+      if (!hasDiff) {
+        if (!confirm('No se han detectado diferencias. ¿Deseas finalizar la sesión?')) return;
+      } else {
+        if (!confirm('Se generarán movimientos de ajuste para igualar el stock del sistema al conteo físico. ¿Continuar?')) return;
+      }
+
+      var btn = this;
+      btn.disabled = true;
+      btn.textContent = 'Procesando ajustes...';
+
+      try {
+        var user = await WMS.getCurrentUser();
+        var timestamp = new Date().toISOString();
+        
+        for (var id in inventorySession.counts) {
+          var data = inventorySession.counts[id];
+          var diff = data.count - data.system;
+          
+          if (diff !== 0) {
+            // Update the "inventario" field for manual tracking
+            await WMS.Products.update(id, { inventario: data.count });
+            
+            // Generate a movement of type 'ajuste'
+            await WMS.Movements.create({
+              type: 'ajuste',
+              productId: id,
+              quantity: Math.abs(diff),
+              notes: 'Ajuste por Inventario General. Diferencia: ' + diff,
+              userId: user ? user.id : null,
+              timestampValue: timestamp
+            });
+          }
+        }
+        
+        WMS.showToast('Inventario finalizado. Stock regularizado en el sistema.', 'success');
+        inventorySession = null;
+        await renderManual(el);
+      } catch (err) {
+        WMS.showToast('Error al finalizar: ' + err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Finalizar y Regularizar';
+      }
     });
   }
 })();
