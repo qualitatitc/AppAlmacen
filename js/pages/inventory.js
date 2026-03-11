@@ -63,9 +63,32 @@
       + '<div id="entryStockInfo" style="margin-bottom:var(--space-4)"></div>'
       + '<div style="display:flex;gap:var(--space-3);justify-content:flex-end"><button type="reset" class="btn btn-secondary">Limpiar</button><button type="submit" class="btn btn-success" id="entrySubmitBtn">📥 Registrar Entrada</button></div></form></div>';
 
-    document.getElementById('entryProduct').addEventListener('change', function(e) {
-      const p = prods.find(x => x.id === e.target.value);
+    document.getElementById('entryProduct').addEventListener('change', async function(e) {
+      const pid = e.target.value;
+      const p = prods.find(x => x.id === pid);
       document.getElementById('entryProductName').value = p ? p.description : '';
+      
+      var stockInfo = document.getElementById('entryStockInfo');
+      if (pid) {
+        var inv = await WMS.Inventory.getAll();
+        var prodInv = inv.filter(i => i.productId === pid && (i.quantity > 0));
+        if (prodInv.length > 0) {
+          var locsHtml = '<div style="margin-top:var(--space-2);padding:var(--space-2);background:rgba(74,110,245,0.1);border-radius:var(--radius-md);border:1px solid rgba(74,110,245,0.2)">' +
+            '<p style="font-size:var(--font-xs);font-weight:600;color:var(--primary-400);margin-bottom:var(--space-1)">📍 Ubicaciones actuales con stock:</p>' +
+            '<div style="display:flex;flex-wrap:wrap;gap:var(--space-2)">';
+          
+          prodInv.forEach(function(i) {
+            var l = locations.find(loc => loc.id === i.locationId);
+            if (l) {
+              var name = l.code + (i.row ? '-F'+i.row : '') + (i.pos ? '-P'+i.pos : '');
+              locsHtml += '<span class="badge badge-primary" style="font-size:10px">' + name + ' (' + i.quantity + ')</span>';
+            }
+          });
+          locsHtml += '</div><p style="font-size:10px;color:var(--text-muted);margin-top:var(--space-1)">💡 Puedes usar estas ubicaciones para recolocar el nuevo material.</p></div>';
+          stockInfo.innerHTML = locsHtml;
+        } else { stockInfo.innerHTML = ''; }
+      } else { stockInfo.innerHTML = ''; }
+
       if (p && p.lotRequired) WMS.showToast('Nota: Este producto requiere lote.', 'info');
     });
     
@@ -217,12 +240,23 @@
     var pg = WMS.paginate(items, stockPage);
     var rows = ''; pg.data.forEach(function(p) {
       var isLow = p.minStock > 0 && p.totalStock <= p.minStock;
-      rows += '<tr class="stock-row" data-product-id="' + p.id + '" style="cursor:pointer"><td><span class="product-sku">' + p.sku + '</span></td><td>' + p.description + '</td><td><span class="badge badge-neutral">' + (p.category||'—') + '</span></td><td><strong>' + WMS.formatNumber(p.totalStock) + '</strong> ' + (p.unit||'uds') + '</td><td>' + p.locationCount + '</td><td>' + (p.minStock?WMS.formatNumber(p.minStock):'—') + '</td><td>' + (p.inventario||'0') + '</td><td>' + (isLow?'<span class="badge badge-danger">⚠ Stock bajo</span>':p.totalStock===0?'<span class="badge badge-neutral">Sin stock</span>':'<span class="badge badge-success">OK</span>') + '</td></tr>';
+      var prodInv = invAll.filter(function(i){return i.productId===p.id && (i.quantity||0) > 0;});
+      var locNames = [];
+      prodInv.forEach(function(i) {
+        var l = locs.find(function(loc) { return loc.id === i.locationId; });
+        if (l) {
+          var name = l.code + (i.row ? '-F'+i.row : '') + (i.pos ? '-P'+i.pos : '');
+          if (locNames.indexOf(name) === -1) locNames.push(name);
+        }
+      });
+      var locStr = locNames.length > 0 ? '<div style="display:flex;flex-direction:column;gap:2px">' + locNames.map(function(l) { return '<span class="badge badge-neutral" style="font-size:10px;padding:1px 6px">' + l + '</span>'; }).join('') + '</div>' : '—';
+
+      rows += '<tr class="stock-row" data-product-id="' + p.id + '" style="cursor:pointer"><td><span class="product-sku">' + p.sku + '</span></td><td>' + p.description + '</td><td><span class="badge badge-neutral">' + (p.category||'—') + '</span></td><td><strong>' + WMS.formatNumber(p.totalStock) + '</strong> ' + (p.unit||'uds') + '</td><td>' + p.locationCount + '</td><td>' + (p.minStock?WMS.formatNumber(p.minStock):'—') + '</td><td>' + locStr + '</td><td>' + (isLow?'<span class="badge badge-danger">⚠ Stock bajo</span>':p.totalStock===0?'<span class="badge badge-neutral">Sin stock</span>':'<span class="badge badge-success">OK</span>') + '</td></tr>';
     });
 
     el.innerHTML = '<div class="card animate-fade-in"><div class="card-header"><h3 class="card-title">🔍 Consulta de Stock</h3></div><div class="filter-bar"><div class="search-bar"><span class="search-bar-icon">🔍</span><input type="text" id="stockSearchInput" placeholder="Buscar por código o descripción..." value="' + stockSearch + '"></div></div>'
       + (pg.data.length===0 ? '<div class="empty-state"><div class="empty-state-icon">📦</div><h3 class="empty-state-title">Sin resultados</h3></div>' :
-      '<div class="table-wrapper"><table class="table"><thead><tr><th>Código</th><th>Descripción</th><th>Categoría</th><th>Stock Total</th><th>Ubicaciones</th><th>Stock Mín.</th><th>Inventario</th><th>Estado</th></tr></thead><tbody>' + rows + '</tbody></table></div><div class="pagination" id="stockPagination"></div>')
+      '<div class="table-wrapper"><table class="table"><thead><tr><th>Código</th><th>Descripción</th><th>Categoría</th><th>Stock Total</th><th>Nº Ubic.</th><th>Stock Mín.</th><th>Ubicaciones</th><th>Estado</th></tr></thead><tbody>' + rows + '</tbody></table></div><div class="pagination" id="stockPagination"></div>')
       + '</div><div id="stockDetail" style="margin-top:var(--space-4)"></div>';
 
     var si = document.getElementById('stockSearchInput');
@@ -284,12 +318,24 @@
       };
       var dF = formatLoc(m.locationFrom), dT = formatLoc(m.locationTo);
       var locD = m.type==='entrada' ? '→ '+dT : m.type==='salida' ? dF+' →' : dF+' → '+dT;
-      rows += '<tr><td style="white-space:nowrap">' + WMS.formatDateTime(m.timestamp) + '</td><td><span class="movement-type ' + m.type + '">' + (typeLabels[m.type]||m.type) + '</span></td><td><span class="product-sku">' + (prod?prod.sku:'—') + '</span></td><td>' + (m.type==='salida'?'-':'+') + WMS.formatNumber(m.quantity) + '</td><td style="font-size:var(--font-xs)">' + locD + '</td><td>' + (m.reference||'—') + '</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (m.notes||'—') + '</td></tr>';
+      rows += '<tr><td style="white-space:nowrap">' + WMS.formatDateTime(m.timestamp) + '</td><td><span class="movement-type ' + m.type + '">' + (typeLabels[m.type]||m.type) + '</span></td><td><span class="product-sku">' + (prod?prod.sku:'—') + '</span></td><td>' + (prod?prod.description:'—') + '</td><td>' + (m.type==='salida'?'-':'+') + WMS.formatNumber(m.quantity) + '</td><td style="font-size:var(--font-xs)">' + locD + '</td><td><button class="btn btn-ghost btn-icon btn-sm print-label-mov" data-id="' + m.productId + '" title="Imprimir Etiqueta">🏷️</button></td></tr>';
     });
     el.innerHTML = '<div class="card animate-fade-in"><div class="card-header"><h3 class="card-title">📋 Historial de Movimientos</h3><span class="badge badge-neutral">' + pg.total + ' registros</span></div><div class="filter-bar"><select class="form-select" id="movTypeFilter"><option value="">Todos los tipos</option><option value="entrada"' + (movFilter==='entrada'?' selected':'') + '>Entradas</option><option value="salida"' + (movFilter==='salida'?' selected':'') + '>Salidas</option><option value="ajuste"' + (movFilter==='ajuste'?' selected':'') + '>Ajustes</option><option value="transferencia"' + (movFilter==='transferencia'?' selected':'') + '>Transferencias</option></select></div>'
       + (pg.data.length===0 ? '<div class="empty-state"><div class="empty-state-icon">📋</div><h3 class="empty-state-title">Sin movimientos</h3></div>' :
-      '<div class="table-wrapper"><table class="table"><thead><tr><th>Fecha/Hora</th><th>Tipo</th><th>Producto</th><th>Cantidad</th><th>Ubicación</th><th>Referencia</th><th>Notas</th></tr></thead><tbody>' + rows + '</tbody></table></div><div class="pagination" id="movPagination"></div>')
+      '<div class="table-wrapper"><table class="table"><thead><tr><th>Fecha/Hora</th><th>Tipo</th><th>Producto</th><th>Descripción</th><th>Cant.</th><th>Ubicación</th><th>Acciones</th></tr></thead><tbody>' + rows + '</tbody></table></div><div class="pagination" id="movPagination"></div>')
       + '</div>';
+    
+    el.querySelectorAll('.print-label-mov').forEach(function(b) {
+      b.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (typeof WMS.showProductLabel === 'function') {
+           WMS.showProductLabel(b.dataset.id);
+        } else {
+           // Fallback to products page if needed, but we should make it global
+           WMS.showToast('Funcionalidad de etiqueta disponible en menú Productos', 'info');
+        }
+      });
+    });
     var mf = document.getElementById('movTypeFilter');
     if (mf) mf.addEventListener('change', async function(e) { movFilter = e.target.value; movPage = 1; await renderMovements(el); });
     var pEl = document.getElementById('movPagination');

@@ -33,7 +33,7 @@
           if (locNames.indexOf(name) === -1) locNames.push(name);
         }
       });
-      var locStr = locNames.length > 0 ? locNames.join(', ') : '—';
+      var locStr = locNames.length > 0 ? '<div style="display:flex;flex-direction:column;gap:4px">' + locNames.map(function(l) { return '<span class="badge badge-neutral" style="font-size:10px">' + l + '</span>'; }).join('') + '</div>' : '—';
 
       rows += '<tr><td><span class="product-sku">' + p.sku + '</span></td><td>' + p.description + '</td><td><span class="badge badge-neutral">' + (p.category||'—') + '</span></td><td><span class="badge ' + (isLow?'badge-danger':'badge-success') + '">' + WMS.formatNumber(st) + '</span></td><td>' + (p.minStock?WMS.formatNumber(p.minStock):'—') + '</td><td>' + locStr + '</td>'
       + (canWrite ? '<td><div class="flex gap-1"><button class="btn btn-ghost btn-icon btn-sm print-label-btn" data-id="' + p.id + '" title="Imprimir Etiqueta">🏷️</button><button class="btn btn-ghost btn-icon btn-sm edit-product-btn" data-id="' + p.id + '" title="Editar">✏️</button><button class="btn btn-ghost btn-icon btn-sm delete-product-btn" data-id="' + p.id + '" title="Eliminar">🗑️</button></div></td>' : '') + '</tr>';
@@ -122,13 +122,23 @@
 
   async function showLabel(id) {
     var p = await WMS.Products.getById(id); if (!p) return;
-    document.getElementById('labelSku').textContent = p.sku;
-    document.getElementById('labelDesc').textContent = p.description;
+    var skuEl = document.getElementById('labelSku');
+    var descEl = document.getElementById('labelDesc');
     var qrEl = document.getElementById('labelQr');
+    
+    // Check if modal elements exist in current DOM (might not if we are on another page)
+    if (!skuEl || !descEl || !qrEl) {
+       WMS.showToast('El visor de etiquetas solo está disponible en la página de Productos', 'warning');
+       return;
+    }
+
+    skuEl.textContent = p.sku;
+    descEl.textContent = p.description;
     qrEl.innerHTML = '';
     new QRCode(qrEl, { text: p.sku, width: 90, height: 90, colorDark: "#000000", colorLight: "#ffffff" });
     WMS.openModal('labelModal');
   }
+  WMS.showProductLabel = showLabel;
 
   async function openProductModal(editId) {
     var title = document.getElementById('productModalTitle');
