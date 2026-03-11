@@ -31,8 +31,8 @@
         '</div>' +
         '<div style="position:absolute;bottom:var(--space-4);right:var(--space-4);z-index:10;background:rgba(11,14,20,0.8);backdrop-filter:blur(8px);padding:var(--space-3);border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,0.05);color:#fff">' +
           '<h4 style="margin-bottom:var(--space-2);font-size:var(--font-sm)">Leyenda de Ocupación</h4>' +
-          '<div style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--font-xs);margin-bottom:var(--space-1)"><span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:2px"></span> Ocupado</div>' +
-          '<div style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--font-xs);margin-bottom:var(--space-1)"><span style="display:inline-block;width:12px;height:12px;background:#3b82f6;border-radius:2px"></span> Stock Bajo Mínimo</div>' +
+          '<div style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--font-xs);margin-bottom:var(--space-1)"><span style="display:inline-block;width:12px;height:12px;background:#3b82f6;border-radius:2px"></span> Ocupado</div>' +
+          '<div style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--font-xs);margin-bottom:var(--space-1)"><span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:2px"></span> Stock Bajo Mínimo</div>' +
           '<div style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--font-xs)"><span style="display:inline-block;width:12px;height:12px;background:#4a5568;border-radius:2px"></span> Vacío</div>' +
           '<button class="btn btn-secondary" style="margin-top:var(--space-3);width:100%;padding:var(--space-1);font-size:var(--font-xs)" id="resetCameraBtn">Centrar Cámara</button>' +
         '</div>' +
@@ -254,7 +254,7 @@
 
             var color = 0x4a5568; // Neutro (vacío)
             if (stockQty > 0) {
-              // Azul si está ocupado, Rojo si algún producto ahí tiene stock bajo
+              // Azul si está ocupado (normal), Rojo si el stock está por debajo del mínimo
               color = isLowStock ? 0xef4444 : 0x3b82f6; 
             }
 
