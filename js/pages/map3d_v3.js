@@ -45,9 +45,10 @@
         '<div id="tooltip3d" style="position:absolute;display:none;background:rgba(0,0,0,0.9);color:#fff;padding:8px 12px;border-radius:4px;font-size:12px;pointer-events:none;z-index:20;border:1px solid var(--border-color);box-shadow:var(--shadow-lg);transform:translate(-50%, -100%);margin-top:-10px"></div>' +
         '<div id="edit-controls" style="position:absolute;top:var(--space-4);right:var(--space-4);z-index:30;display:flex;flex-direction:column;gap:var(--space-2)">' +
           '<button class="btn btn-primary" id="toggleEditBtn">🛠️ Modo Edición: OFF</button>' +
-          '<div id="save-actions" style="display:none;flex-direction:column;gap:var(--space-2)">' +
+          '<div id="edit-actions" style="display:none;flex-direction:column;gap:var(--space-2)">' +
+            '<button class="btn btn-secondary" id="rotate180Btn" style="display:none">🔄 Girar 180°</button>' +
             '<button class="btn btn-success" id="saveLayoutBtn">💾 Guardar Cambios</button>' +
-            '<div style="background:rgba(0,0,0,0.8);padding:var(--space-2);border-radius:var(--radius-md);font-size:var(--font-xs);color:#34d399">Selecciona un módulo para moverlo</div>' +
+            '<div id="selection-hint" style="background:rgba(0,0,0,0.8);padding:var(--space-2);border-radius:var(--radius-md);font-size:var(--font-xs);color:#34d399">Selecciona un módulo para moverlo</div>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -398,7 +399,7 @@
     scene.add(transformControls);
 
     var toggleBtn = document.getElementById('toggleEditBtn');
-    var saveActions = document.getElementById('save-actions');
+    var editActions = document.getElementById('edit-actions');
     var saveBtn = document.getElementById('saveLayoutBtn');
 
     if (toggleBtn) {
@@ -407,10 +408,50 @@
         console.log('Toggle Edit button clicked, editMode now', editMode);
         toggleBtn.textContent = editMode ? '🛠️ Modo Edición: ON' : '🛠️ Modo Edición: OFF';
         toggleBtn.className = editMode ? 'btn btn-danger' : 'btn btn-primary';
-        saveActions.style.display = editMode ? 'flex' : 'none';
+        editActions.style.display = editMode ? 'flex' : 'none';
         if (!editMode) {
           transformControls.detach();
+          if (selectedObject) highlightSelectedShelf(selectedObject, false);
           selectedObject = null;
+          if (rotateBtn) rotateBtn.style.display = 'none';
+        }
+      });
+    }
+
+    var rotateBtn = document.getElementById('rotate180Btn');
+    if (rotateBtn) {
+      rotateBtn.addEventListener('click', function() {
+        if (selectedObject) {
+          selectedObject.rotation.y += Math.PI;
+          // Trigger a re-render/update if needed, but animate handles it
+        } else {
+          WMS.showToast('Selecciona un módulo primero', 'info');
+        }
+      });
+    }
+
+    function highlightSelectedShelf(obj, isSelected) {
+      if (rotateBtn) rotateBtn.style.display = isSelected ? 'flex' : 'none';
+      var hint = document.getElementById('selection-hint');
+      if (hint) {
+        if (isSelected) {
+          hint.innerHTML = 'Módulo <strong>' + (obj.userData.code || '') + '</strong> seleccionado.<br>Usa las flechas para mover o el botón para girar.';
+          hint.style.color = '#facc15';
+        } else {
+          hint.innerHTML = 'Selecciona un módulo para moverlo';
+          hint.style.color = '#34d399';
+        }
+      }
+
+      obj.traverse(function(node) {
+        if (node.userData && node.userData.isSlot) {
+          if (isSelected) {
+            node.material.emissive.set(0x444400); // Yellowish glow
+            node.material.emissiveIntensity = 0.4;
+          } else {
+            node.material.emissive.set(0x000000);
+            node.material.emissiveIntensity = 0;
+          }
         }
       });
     }
@@ -453,9 +494,6 @@
       raycaster.setFromCamera(mouse, camera);
       var intersects = raycaster.intersectObjects(scene.children, true);
 
-      var hitGizmo = false;
-      var hitShelf = null;
-
       for (var i = 0; i < intersects.length; i++) {
         var obj = intersects[i].object;
         
@@ -467,10 +505,10 @@
         if (hitGizmo) break;
 
         p = obj;
-        while (p && (!p.userData || !p.userData.isShelfGroup)) {
+        while (p && (!p.userData || !p.userData.isShelf)) {
           p = p.parent;
         }
-        if (p && p.userData && p.userData.isShelfGroup) {
+        if (p && p.userData && p.userData.isShelf) {
           hitShelf = p;
           break;
         }
@@ -480,12 +518,15 @@
 
       if (hitShelf) {
         if (selectedObject !== hitShelf) {
+          if (selectedObject) highlightSelectedShelf(selectedObject, false);
           selectedObject = hitShelf;
+          highlightSelectedShelf(selectedObject, true);
           transformControls.attach(hitShelf);
           transformControls.setMode('translate');
           transformControls.showY = false;
         }
       } else {
+        if (selectedObject) highlightSelectedShelf(selectedObject, false);
         selectedObject = null;
         transformControls.detach();
       }
