@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS public.products (
     unit TEXT DEFAULT 'uds',
     weight NUMERIC DEFAULT 0,
     "minStock" INTEGER DEFAULT 0,
+    "inventario" INTEGER DEFAULT 0,
     "lotRequired" BOOLEAN DEFAULT false,
     "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
     "updatedAt" TIMESTAMP WITH TIME ZONE

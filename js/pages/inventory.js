@@ -11,7 +11,7 @@
     else if (sub === 'stock') activeTab = 'stock';
     else if (sub === 'movements') activeTab = 'movements';
 
-    container.innerHTML = '<div class="page-header"><div><h1 class="page-title">Inventario</h1><p class="page-subtitle">Gestión de entradas, salidas y consulta de stock</p></div></div>'
+    container.innerHTML = '<div class="page-header"><div><h1 class="page-title">Control de stocks</h1><p class="page-subtitle">Gestión de entradas, salidas y consulta de stock</p></div></div>'
       + '<div class="tabs"><div class="tab ' + (activeTab==='entry'?'active':'') + '" data-tab="entry">📥 Entrada</div><div class="tab ' + (activeTab==='exit'?'active':'') + '" data-tab="exit">📤 Salida</div><div class="tab ' + (activeTab==='stock'?'active':'') + '" data-tab="stock">🔍 Consultar Stock</div><div class="tab ' + (activeTab==='movements'?'active':'') + '" data-tab="movements">📋 Movimientos</div></div>'
       + '<div id="inventoryContent" class="inventory-tabs-content"></div>';
 
@@ -211,12 +211,12 @@
     var pg = WMS.paginate(items, stockPage);
     var rows = ''; pg.data.forEach(function(p) {
       var isLow = p.minStock > 0 && p.totalStock <= p.minStock;
-      rows += '<tr class="stock-row" data-product-id="' + p.id + '" style="cursor:pointer"><td><span class="product-sku">' + p.sku + '</span></td><td>' + p.description + '</td><td><span class="badge badge-neutral">' + (p.category||'—') + '</span></td><td><strong>' + WMS.formatNumber(p.totalStock) + '</strong> ' + (p.unit||'uds') + '</td><td>' + p.locationCount + '</td><td>' + (p.minStock?WMS.formatNumber(p.minStock):'—') + '</td><td>' + (isLow?'<span class="badge badge-danger">⚠ Stock bajo</span>':p.totalStock===0?'<span class="badge badge-neutral">Sin stock</span>':'<span class="badge badge-success">OK</span>') + '</td></tr>';
+      rows += '<tr class="stock-row" data-product-id="' + p.id + '" style="cursor:pointer"><td><span class="product-sku">' + p.sku + '</span></td><td>' + p.description + '</td><td><span class="badge badge-neutral">' + (p.category||'—') + '</span></td><td><strong>' + WMS.formatNumber(p.totalStock) + '</strong> ' + (p.unit||'uds') + '</td><td>' + p.locationCount + '</td><td>' + (p.minStock?WMS.formatNumber(p.minStock):'—') + '</td><td>' + (p.inventario||'0') + '</td><td>' + (isLow?'<span class="badge badge-danger">⚠ Stock bajo</span>':p.totalStock===0?'<span class="badge badge-neutral">Sin stock</span>':'<span class="badge badge-success">OK</span>') + '</td></tr>';
     });
 
     el.innerHTML = '<div class="card animate-fade-in"><div class="card-header"><h3 class="card-title">🔍 Consulta de Stock</h3></div><div class="filter-bar"><div class="search-bar"><span class="search-bar-icon">🔍</span><input type="text" id="stockSearchInput" placeholder="Buscar por código o descripción..." value="' + stockSearch + '"></div></div>'
       + (pg.data.length===0 ? '<div class="empty-state"><div class="empty-state-icon">📦</div><h3 class="empty-state-title">Sin resultados</h3></div>' :
-      '<div class="table-wrapper"><table class="table"><thead><tr><th>Código</th><th>Descripción</th><th>Categoría</th><th>Stock Total</th><th>Ubicaciones</th><th>Stock Mín.</th><th>Estado</th></tr></thead><tbody>' + rows + '</tbody></table></div><div class="pagination" id="stockPagination"></div>')
+      '<div class="table-wrapper"><table class="table"><thead><tr><th>Código</th><th>Descripción</th><th>Categoría</th><th>Stock Total</th><th>Ubicaciones</th><th>Stock Mín.</th><th>Inventario</th><th>Estado</th></tr></thead><tbody>' + rows + '</tbody></table></div><div class="pagination" id="stockPagination"></div>')
       + '</div><div id="stockDetail" style="margin-top:var(--space-4)"></div>';
 
     var si = document.getElementById('stockSearchInput');
