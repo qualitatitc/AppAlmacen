@@ -202,6 +202,18 @@
       shelfGroup.userData = { isShelfGroup: true, letter: letter };
       scene.add(shelfGroup);
 
+      var sumX = 0, sumZ = 0;
+      mods.forEach(function(mod, modIdx) {
+        var xPos = startX + (modIdx * moduleWidth) + (moduleWidth/2);
+        var cubeX = (mod.x_pos !== undefined && mod.x_pos !== null) ? mod.x_pos : xPos;
+        var cubeZ = (mod.z_pos !== undefined && mod.z_pos !== null) ? mod.z_pos : zPos;
+        sumX += cubeX;
+        sumZ += cubeZ;
+      });
+      var cx = sumX / mods.length;
+      var cz = sumZ / mods.length;
+      shelfGroup.position.set(cx, 0, cz);
+
       mods.forEach(function(mod, modIdx) {
         var xPos = startX + (modIdx * moduleWidth) + (moduleWidth/2);
         var cubeX = (mod.x_pos !== undefined && mod.x_pos !== null) ? mod.x_pos : xPos;
@@ -213,7 +225,7 @@
         var totalHeight = numRows * rowHeight;
         
         var moduleGroup = new THREE.Group();
-        moduleGroup.position.set(cubeX, totalHeight/2, cubeZ);
+        moduleGroup.position.set(cubeX - cx, totalHeight/2, cubeZ - cz);
         moduleGroup.rotation.y = cubeRot;
 
         var modInventory = inventory.filter(function(inv) { return inv.locationId === mod.id; });
