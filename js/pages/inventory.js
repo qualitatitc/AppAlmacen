@@ -59,7 +59,7 @@
       +   '<div class="form-group"><label class="form-label">Lote</label><input type="text" class="form-input" id="entryLot"></div>'
       + '</div>'
       + '<div class="form-row"><div class="form-group"><label class="form-label">Proveedor</label><input type="text" class="form-input" id="entrySupplier"></div><div class="form-group"><label class="form-label">Doc. referencia</label><input type="text" class="form-input" id="entryRef" placeholder="Nº albarán"></div></div>'
-      + '<div class="form-group"><label class="form-label">Observaciones</label><textarea class="form-textarea" id="entryNotes"></textarea></div>'
+      + '<div class="form-row"><div class="form-group" style="flex:2"><label class="form-label">Observaciones</label><textarea class="form-textarea" style="min-height:40px" id="entryNotes"></textarea></div><div class="form-group" style="display:flex;align-items:center;padding-top:20px"><label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:var(--font-sm);color:var(--text-secondary)"><input type="checkbox" id="entryIsAdjustment" style="width:18px;height:18px;accent-color:var(--primary-500)"> Regularización de stock (Ajuste)</label></div></div>'
       + '<div id="entryStockInfo" style="margin-bottom:var(--space-4)"></div>'
       + '<div style="display:flex;gap:var(--space-3);justify-content:flex-end"><button type="reset" class="btn btn-secondary">Limpiar</button><button type="submit" class="btn btn-success" id="entrySubmitBtn">📥 Registrar Entrada</button></div></form></div>';
 
@@ -124,6 +124,8 @@
       var lid = document.getElementById('entryModule').value;
       var lot = document.getElementById('entryLot').value.trim();
       var row = document.getElementById('entryRowSelect').value, pos = document.getElementById('entryPosSelect').value;
+      var isAdjustment = document.getElementById('entryIsAdjustment') ? document.getElementById('entryIsAdjustment').checked : false;
+      var movType = isAdjustment ? 'ajuste' : 'entrada';
       var btn = document.getElementById('entrySubmitBtn');
 
       if (!pid || !qty || !lid || row === '' || pos === '') { WMS.showToast('Producto, cantidad y ubicación completa son obligatorios.', 'warning'); return; }
@@ -135,7 +137,7 @@
         await WMS.Inventory.addStock(pid, lid, qty, lot, null, '', row, pos);
         var preciseLoc = lid; if (row||pos) preciseLoc += '|' + row + '|' + pos;
         var user = await WMS.getCurrentUser();
-        await WMS.Movements.create({ type:'entrada', productId:pid, quantity:qty, locationTo:preciseLoc, lot:lot, supplier:document.getElementById('entrySupplier').value.trim(), reference:document.getElementById('entryRef').value.trim(), notes:document.getElementById('entryNotes').value.trim(), userId:(user?user.id:null), entryNumber:'ENT-'+Date.now().toString(36).toUpperCase() });
+        await WMS.Movements.create({ type:movType, productId:pid, quantity:qty, locationTo:preciseLoc, lot:lot, supplier:document.getElementById('entrySupplier').value.trim(), reference:document.getElementById('entryRef').value.trim(), notes:document.getElementById('entryNotes').value.trim(), userId:(user?user.id:null), entryNumber:'ENT-'+Date.now().toString(36).toUpperCase() });
         WMS.showToast('Entrada registrada: ' + qty + ' uds de ' + (prod?prod.sku:pid), 'success');
         e.target.reset();
         document.getElementById('entryProductName').value = '';
@@ -155,7 +157,7 @@
       + '<form id="exitForm"><div class="form-row"><div class="form-group"><label class="form-label form-required">Producto</label><select class="form-select" id="exitProduct" required><option value="">Seleccionar...</option>' + productOptions(prods) + '</select></div><div class="form-group"><label class="form-label form-required">Cantidad</label><input type="number" class="form-input" id="exitQty" min="1" required></div></div>'
       + '<div class="form-row"><div class="form-group"><label class="form-label form-required">Stock disponible (Ubicación exacta)</label><select class="form-select" id="exitStockChoice" required><option value="">Seleccione un código primero...</option></select></div></div>'
       + '<div class="form-row"><div class="form-group"><label class="form-label">Doc. referencia</label><input type="text" class="form-input" id="exitRef"></div><div class="form-group"><label class="form-label">Lote</label><input type="text" class="form-input" id="exitLot"></div></div>'
-      + '<div class="form-group"><label class="form-label">Observaciones</label><textarea class="form-textarea" id="exitNotes"></textarea></div>'
+      + '<div class="form-row"><div class="form-group" style="flex:2"><label class="form-label">Observaciones</label><textarea class="form-textarea" style="min-height:40px" id="exitNotes"></textarea></div><div class="form-group" style="display:flex;align-items:center;padding-top:20px"><label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:var(--font-sm);color:var(--text-secondary)"><input type="checkbox" id="exitIsAdjustment" style="width:18px;height:18px;accent-color:var(--primary-500)"> Regularización de stock (Ajuste)</label></div></div>'
       + '<div id="exitStockInfo" style="margin-bottom:var(--space-4)"></div>'
       + '<div style="display:flex;gap:var(--space-3);justify-content:flex-end"><button type="reset" class="btn btn-secondary">Limpiar</button><button type="submit" class="btn btn-danger" id="exitSubmitBtn">📤 Registrar Salida</button></div></form></div>';
 
@@ -181,6 +183,8 @@
       var pid = document.getElementById('exitProduct').value;
       var qty = parseInt(document.getElementById('exitQty').value);
       var choice = document.getElementById('exitStockChoice').value;
+      var isAdjustment = document.getElementById('exitIsAdjustment') ? document.getElementById('exitIsAdjustment').checked : false;
+      var movType = isAdjustment ? 'ajuste' : 'salida';
       var btn = document.getElementById('exitSubmitBtn');
 
       if (!pid || !qty || !choice) { WMS.showToast('Producto, cantidad y origen son obligatorios.', 'warning'); return; }
@@ -193,7 +197,7 @@
         var prod = prods.find(x => x.id === pid);
         var preciseLoc = lid; if (row||pos) preciseLoc += '|' + row + '|' + pos;
         var user = await WMS.getCurrentUser();
-        await WMS.Movements.create({ type:'salida', productId:pid, quantity:qty, locationFrom:preciseLoc, reason:'venta', lot:lot, reference:document.getElementById('exitRef').value.trim(), notes:document.getElementById('exitNotes').value.trim(), userId:(user?user.id:null) });
+        await WMS.Movements.create({ type:movType, productId:pid, quantity:qty, locationFrom:preciseLoc, reason:'venta', lot:lot, reference:document.getElementById('exitRef').value.trim(), notes:document.getElementById('exitNotes').value.trim(), userId:(user?user.id:null) });
         WMS.showToast('Salida registrada: ' + qty + ' uds de ' + (prod?prod.sku:pid), 'success');
         e.target.reset(); document.getElementById('exitStockInfo').innerHTML = '';
         await renderExit(el); // Refresh stock options

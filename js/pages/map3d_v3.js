@@ -316,9 +316,9 @@
       var center = new THREE.Vector3();
       box.getCenter(center);
       
-      var margin = 10;
+      var margin = 100; // Increased margin significantly to cover more area
       var gridWidth = Math.max(size.x, size.z) + margin;
-      var gridDiv = Math.round(gridWidth);
+      var gridDiv = Math.round(gridWidth / 2); // Adjust division for visual look
       
       var grid = new THREE.GridHelper(gridWidth, gridDiv, 0x333333, 0x222222);
       grid.position.set(center.x, 0, center.z);
