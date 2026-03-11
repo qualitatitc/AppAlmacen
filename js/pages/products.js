@@ -149,10 +149,23 @@
     var inventario = parseInt(document.getElementById('prodInventory').value) || 0;
     var lotReq = document.getElementById('prodLotRequired').checked;
     var editId = document.getElementById('prodEditId').value;
+    
     if (!sku || !desc) { WMS.showToast('Código y descripción son obligatorios.', 'warning'); return; }
-    if (editId) { await WMS.Products.update(editId, { sku:sku, description:desc, category:cat, unit:unit, weight:weight, minStock:minStock, inventario:inventario, lotRequired:lotReq }); WMS.showToast('Producto actualizado.', 'success'); }
-    else { await WMS.Products.create({ sku:sku, description:desc, category:cat, unit:unit, weight:weight, minStock:minStock, inventario:inventario, lotRequired:lotReq }); WMS.showToast('Producto creado.', 'success'); }
-    WMS.closeModal('productModal'); await renderPage(container);
+    
+    try {
+      if (editId) { 
+        await WMS.Products.update(editId, { sku:sku, description:desc, category:cat, unit:unit, weight:weight, minStock:minStock, inventario:inventario, lotRequired:lotReq }); 
+        WMS.showToast('Producto actualizado.', 'success'); 
+      } else { 
+        await WMS.Products.create({ sku:sku, description:desc, category:cat, unit:unit, weight:weight, minStock:minStock, inventario:inventario, lotRequired:lotReq }); 
+        WMS.showToast('Producto creado.', 'success'); 
+      }
+      WMS.closeModal('productModal'); 
+      await renderPage(container);
+    } catch (err) {
+      console.error("Error al guardar producto:", err);
+      WMS.showToast('Error al guardar: ' + (err.message || 'Revisa la consola'), 'error');
+    }
   }
 
   async function deleteProduct(id, container) {
