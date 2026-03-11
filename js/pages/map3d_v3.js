@@ -494,6 +494,9 @@
       raycaster.setFromCamera(mouse, camera);
       var intersects = raycaster.intersectObjects(scene.children, true);
 
+      var hitGizmo = false;
+      var hitShelf = null;
+
       for (var i = 0; i < intersects.length; i++) {
         var obj = intersects[i].object;
         
