@@ -49,7 +49,8 @@
       + '<div class="nav-section"><div class="nav-section-title">Principal</div><a href="#/dashboard" class="nav-item" data-path="/dashboard"><span class="nav-item-icon">📊</span> Dashboard</a></div>'
       + '<div class="nav-section"><div class="nav-section-title">Almacén</div><a href="#/locations" class="nav-item" data-path="/locations"><span class="nav-item-icon">📍</span> Ubicaciones</a><a href="#/map3d" class="nav-item" data-path="/map3d"><span class="nav-item-icon">🗺️</span> Mapa 3D</a></div>'
       + '<div class="nav-section"><div class="nav-section-title">Operaciones</div>'
-      + '<a href="#/inventory/stock" class="nav-item" data-path="/inventory/stock"><span class="nav-item-icon">📋</span> Control de stocks</a>'
+      + '<a href="#/inventory/stock" class="nav-item" data-path="/inventory/stock"><span class="nav-item-icon">📊</span> Control de stocks</a>'
+      + '<a href="#/inventory/manual" class="nav-item" data-path="/inventory/manual"><span class="nav-item-icon">📝</span> Inventario</a>'
       + '<a href="#/inventory/entry" class="nav-item" data-path="/inventory/entry"><span class="nav-item-icon">📥</span> Nueva Entrada</a>'
       + '<a href="#/inventory/exit" class="nav-item" data-path="/inventory/exit"><span class="nav-item-icon">📤</span> Nueva Salida</a>'
       + '<a href="#/inventory/movements" class="nav-item" data-path="/inventory/movements"><span class="nav-item-icon">🔄</span> Movimientos</a>'
@@ -106,7 +107,7 @@
     });
   }
 
-  var routeTitles = { '/dashboard':'Dashboard', '/products':'Productos', '/locations':'Ubicaciones', '/inventory':'Control de stocks', '/inventory/entry':'Entrada', '/inventory/exit':'Salida', '/inventory/stock':'Stock', '/inventory/movements':'Movimientos', '/users':'Usuarios', '/map3d':'Mapa 3D' };
+  var routeTitles = { '/dashboard':'Dashboard', '/products':'Productos', '/locations':'Ubicaciones', '/inventory':'Control de stocks', '/inventory/entry':'Entrada', '/inventory/exit':'Salida', '/inventory/stock':'Stock', '/inventory/manual':'Inventario', '/inventory/movements':'Movimientos', '/users':'Usuarios', '/map3d':'Mapa 3D' };
   function updateBreadcrumb(path) {
     var bc = document.getElementById('breadcrumb'); if (!bc) return;
     var title = routeTitles[path] || 'Página';

@@ -10,9 +10,10 @@
     else if (sub === 'exit') activeTab = 'exit';
     else if (sub === 'stock') activeTab = 'stock';
     else if (sub === 'movements') activeTab = 'movements';
+    else if (sub === 'manual') activeTab = 'manual';
 
-    container.innerHTML = '<div class="page-header"><div><h1 class="page-title">Control de stocks</h1><p class="page-subtitle">Gestión de entradas, salidas y consulta de stock</p></div></div>'
-      + '<div class="tabs"><div class="tab ' + (activeTab==='entry'?'active':'') + '" data-tab="entry">📥 Entrada</div><div class="tab ' + (activeTab==='exit'?'active':'') + '" data-tab="exit">📤 Salida</div><div class="tab ' + (activeTab==='stock'?'active':'') + '" data-tab="stock">🔍 Consultar Stock</div><div class="tab ' + (activeTab==='movements'?'active':'') + '" data-tab="movements">📋 Movimientos</div></div>'
+    container.innerHTML = '<div class="page-header"><div><h1 class="page-title">' + (activeTab==='manual'?'Inventario (Manual)':'Control de stocks') + '</h1><p class="page-subtitle">Gestión de entradas, salidas y consulta de stock</p></div></div>'
+      + '<div class="tabs"><div class="tab ' + (activeTab==='manual'?'active':'') + '" data-tab="manual">📝 Inventario</div><div class="tab ' + (activeTab==='stock'?'active':'') + '" data-tab="stock">🔍 Stock Sistema</div><div class="tab ' + (activeTab==='entry'?'active':'') + '" data-tab="entry">📥 Entradas</div><div class="tab ' + (activeTab==='exit'?'active':'') + '" data-tab="exit">📤 Salidas</div><div class="tab ' + (activeTab==='movements'?'active':'') + '" data-tab="movements">📋 Movimientos</div></div>'
       + '<div id="inventoryContent" class="inventory-tabs-content"></div>';
 
     container.querySelectorAll('.tab').forEach(function(tab) {
@@ -33,6 +34,7 @@
     else if (activeTab === 'exit') await renderExit(el);
     else if (activeTab === 'stock') await renderStock(el);
     else if (activeTab === 'movements') await renderMovements(el);
+    else if (activeTab === 'manual') await renderManual(el);
   }
 
   function positionOptions(locs) {
@@ -288,5 +290,41 @@
     if (mf) mf.addEventListener('change', async function(e) { movFilter = e.target.value; movPage = 1; await renderMovements(el); });
     var pEl = document.getElementById('movPagination');
     if (pEl) WMS.renderPagination(pEl, pg, async function(p) { movPage = p; await renderMovements(el); });
+  }
+  async function renderManual(el) {
+    var [prods, summary] = await Promise.all([WMS.Products.getAll(), WMS.Inventory.getStockSummary()]);
+    
+    var rows = '';
+    prods.forEach(function(p) {
+      var s = summary.find(function(x){return x.id === p.id;});
+      var st = s ? s.totalStock : 0;
+      rows += '<tr>'
+            + '<td><span class="product-sku">' + p.sku + '</span></td>'
+            + '<td>' + p.description + '</td>'
+            + '<td>' + WMS.formatNumber(st) + '</td>'
+            + '<td><div style="display:flex;gap:var(--space-2);align-items:center"><input type="number" class="form-input" style="width:100px" data-id="' + p.id + '" value="' + (p.inventario||0) + '"><button class="btn btn-primary btn-sm update-inv-btn" data-id="' + p.id + '">Guardar</button></div></td>'
+            + '</tr>';
+    });
+
+    el.innerHTML = '<div class="card animate-fade-in"><div class="card-header"><h3 class="card-title">📝 Inventario Manual</h3><p class="text-muted" style="font-size:var(--font-xs)">Introduce aquí el conteo físico de los productos para contrastar con el sistema.</p></div>'
+      + '<div class="table-wrapper"><table class="table"><thead><tr><th>Código</th><th>Descripción</th><th>Stock Sistema</th><th>Inventario Manual</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+      + '</div>';
+
+    el.querySelectorAll('.update-inv-btn').forEach(function(btn) {
+      btn.addEventListener('click', async function() {
+        var id = btn.dataset.id;
+        var input = el.querySelector('input[data-id="' + id + '"]');
+        var val = parseInt(input.value) || 0;
+        btn.disabled = true;
+        try {
+          await WMS.Products.update(id, { inventario: val });
+          WMS.showToast('Inventario actualizado para ' + id, 'success');
+        } catch (err) {
+          WMS.showToast('Error al actualizar: ' + err.message, 'error');
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
   }
 })();
