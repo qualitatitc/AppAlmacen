@@ -252,9 +252,10 @@
               if (p && !slotSkus.includes(p.sku)) slotSkus.push(p.sku);
             });
 
-            var color = 0x4a5568; // Empty
+            var color = 0x4a5568; // Neutro (vacío)
             if (stockQty > 0) {
-              color = isLowStock ? 0x3b82f6 : 0xef4444; // Blue if low stock, Red if occupied
+              // Azul si está ocupado, Rojo si algún producto ahí tiene stock bajo
+              color = isLowStock ? 0xef4444 : 0x3b82f6; 
             }
 
             var slotGeom = new THREE.BoxGeometry(sw - 0.05, rowHeight - 0.1, shelfDepth);

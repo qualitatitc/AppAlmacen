@@ -290,7 +290,7 @@
           recMoves.forEach(function(m) { 
             var dF = formatLoc(m.locationFrom), dT = formatLoc(m.locationTo);
             var locD = m.type==='entrada' ? '→ '+dT : m.type==='salida' ? dF+' →' : dF+' → '+dT;
-            deHtml += '<tr><td>' + WMS.formatDateTime(m.timestamp) + '</td><td><span class="movement-type ' + m.type + '">' + (typeLabels[m.type]||m.type) + '</span></td><td>' + (m.type==='salida'?'-':'+') + WMS.formatNumber(m.quantity) + '</td><td style="font-size:var(--font-xs)">' + locD + '</td><td>' + (m.reference||'—') + '</td></tr>'; 
+            deHtml += '<tr><td>' + WMS.formatDate(m.timestamp) + '</td><td><span class="movement-type ' + m.type + '">' + (typeLabels[m.type]||m.type) + '</span></td><td>' + (m.type==='salida'?'-':'+') + WMS.formatNumber(m.quantity) + '</td><td style="font-size:var(--font-xs)">' + locD + '</td><td>' + (m.reference||'—') + '</td></tr>'; 
           });
           deHtml += '</tbody></table></div>';
         }
@@ -318,11 +318,11 @@
       };
       var dF = formatLoc(m.locationFrom), dT = formatLoc(m.locationTo);
       var locD = m.type==='entrada' ? '→ '+dT : m.type==='salida' ? dF+' →' : dF+' → '+dT;
-      rows += '<tr><td style="white-space:nowrap">' + WMS.formatDateTime(m.timestamp) + '</td><td><span class="movement-type ' + m.type + '">' + (typeLabels[m.type]||m.type) + '</span></td><td><span class="product-sku">' + (prod?prod.sku:'—') + '</span></td><td>' + (prod?prod.description:'—') + '</td><td>' + (m.type==='salida'?'-':'+') + WMS.formatNumber(m.quantity) + '</td><td style="font-size:var(--font-xs)">' + locD + '</td><td><button class="btn btn-ghost btn-icon btn-sm print-label-mov" data-id="' + m.productId + '" title="Imprimir Etiqueta">🏷️</button></td></tr>';
+      rows += '<tr><td style="white-space:nowrap">' + WMS.formatDate(m.timestamp) + '</td><td><span class="movement-type ' + m.type + '">' + (typeLabels[m.type]||m.type) + '</span></td><td><span class="product-sku">' + (prod?prod.sku:'—') + '</span></td><td>' + (prod?prod.description:'—') + '</td><td>' + (m.type==='salida'?'-':'+') + WMS.formatNumber(m.quantity) + '</td><td style="font-size:var(--font-xs)">' + locD + '</td><td><button class="btn btn-ghost btn-icon btn-sm print-label-mov" data-id="' + m.productId + '" title="Imprimir Etiqueta">🏷️</button></td></tr>';
     });
     el.innerHTML = '<div class="card animate-fade-in"><div class="card-header"><h3 class="card-title">📋 Historial de Movimientos</h3><span class="badge badge-neutral">' + pg.total + ' registros</span></div><div class="filter-bar"><select class="form-select" id="movTypeFilter"><option value="">Todos los tipos</option><option value="entrada"' + (movFilter==='entrada'?' selected':'') + '>Entradas</option><option value="salida"' + (movFilter==='salida'?' selected':'') + '>Salidas</option><option value="ajuste"' + (movFilter==='ajuste'?' selected':'') + '>Ajustes</option><option value="transferencia"' + (movFilter==='transferencia'?' selected':'') + '>Transferencias</option></select></div>'
       + (pg.data.length===0 ? '<div class="empty-state"><div class="empty-state-icon">📋</div><h3 class="empty-state-title">Sin movimientos</h3></div>' :
-      '<div class="table-wrapper"><table class="table"><thead><tr><th>Fecha/Hora</th><th>Tipo</th><th>Producto</th><th>Descripción</th><th>Cant.</th><th>Ubicación</th><th>Acciones</th></tr></thead><tbody>' + rows + '</tbody></table></div><div class="pagination" id="movPagination"></div>')
+      '<div class="table-wrapper"><table class="table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th>Descripción</th><th>Cant.</th><th>Ubicación</th><th>Acciones</th></tr></thead><tbody>' + rows + '</tbody></table></div><div class="pagination" id="movPagination"></div>')
       + '</div>';
     
     el.querySelectorAll('.print-label-mov').forEach(function(b) {
