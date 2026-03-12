@@ -10,7 +10,7 @@
 
   var KEYS = {
     users: 'users', products: 'products', locations: 'locations',
-    inventory: 'inventory', movements: 'movements', material_requests: 'material_requests'
+    inventory: 'inventory', movements: 'movements', material_requests: 'solicitudes_material'
   };
 
   // Helper to convert LocalStorage keys to Supabase table names
@@ -154,7 +154,7 @@
     getAll: async function() {
       try {
         const all = await getAll(KEYS.material_requests);
-        return all.sort(function(a,b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+        return all.sort(function(a,b) { return new Date(b.creado_en) - new Date(a.creado_en); });
       } catch (e) {
         console.warn('Table material_requests might not exist yet', e);
         return [];
@@ -162,10 +162,17 @@
     },
     getById: async function(id) { return await getById(KEYS.material_requests, id); },
     create: async function(r) { 
-      if (!r.status) r.status = 'pending';
-      return await create(KEYS.material_requests, r); 
+      if (!r.estado) r.estado = 'pendiente';
+      var n = Object.assign({}, r, { id: WMS.generateId(), creado_en: new Date().toISOString() });
+      const { data, error } = await sb.from(KEYS.material_requests).insert([n]).select().single();
+      if (error) throw error;
+      return data;
     },
-    update: async function(id, r) { return await update(KEYS.material_requests, id, r); },
+    update: async function(id, r) { 
+      const { data, error } = await sb.from(KEYS.material_requests).update(r).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    },
     delete: async function(id) { return await remove(KEYS.material_requests, id); }
   };
 
