@@ -10,7 +10,7 @@
 
   var KEYS = {
     users: 'users', products: 'products', locations: 'locations',
-    inventory: 'inventory', movements: 'movements'
+    inventory: 'inventory', movements: 'movements', material_requests: 'material_requests'
   };
 
   // Helper to convert LocalStorage keys to Supabase table names
@@ -148,6 +148,25 @@
       if (mvs.length > 0) return { error: 'Usuario con operaciones registradas. Solo se puede inactivar.' };
       return await remove(KEYS.users, id);
     }
+  };
+
+  WMS.MaterialRequests = {
+    getAll: async function() {
+      try {
+        const all = await getAll(KEYS.material_requests);
+        return all.sort(function(a,b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+      } catch (e) {
+        console.warn('Table material_requests might not exist yet', e);
+        return [];
+      }
+    },
+    getById: async function(id) { return await getById(KEYS.material_requests, id); },
+    create: async function(r) { 
+      if (!r.status) r.status = 'pending';
+      return await create(KEYS.material_requests, r); 
+    },
+    update: async function(id, r) { return await update(KEYS.material_requests, id, r); },
+    delete: async function(id) { return await remove(KEYS.material_requests, id); }
   };
 
   WMS.Stats = {

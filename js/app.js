@@ -35,6 +35,7 @@
     else if (path.indexOf('/inventory') === 0) { var sub = path.split('/')[2] || null; await WMS.renderInventory(c, sub); }
     else if (path === '/users') await WMS.renderUsers(c);
     else if (path === '/map3d') await WMS.renderMap3D(c);
+    else if (path === '/material-requests') await WMS.renderMaterialRequests(c);
     else c.innerHTML = '<div class="empty-state" style="margin-top:var(--space-12)"><div class="empty-state-icon">🔍</div><h3 class="empty-state-title">Página no encontrada</h3><a href="#/dashboard" class="btn btn-primary">Ir al Dashboard</a></div>';
     updateBreadcrumb(path);
   }
@@ -55,6 +56,7 @@
       + '<a href="#/inventory/exit" class="nav-item" data-path="/inventory/exit"><span class="nav-item-icon">📤</span> Nueva Salida</a>'
       + '<a href="#/inventory/movements" class="nav-item" data-path="/inventory/movements"><span class="nav-item-icon">🔄</span> Movimientos</a>'
       + '<a href="#/products" class="nav-item" data-path="/products"><span class="nav-item-icon">📦</span> Productos</a>'
+      + '<a href="#/material-requests" class="nav-item" data-path="/material-requests"><span class="nav-item-icon">📩</span> Peticiones de material</a>'
       + '</div>'
       + '<div class="nav-section"><div class="nav-section-title">Sistema</div><a href="#/users" class="nav-item" data-path="/users"><span class="nav-item-icon">👥</span> Usuarios</a></div>'
       + '</nav>'
@@ -107,7 +109,7 @@
     });
   }
 
-  var routeTitles = { '/dashboard':'Dashboard', '/products':'Productos', '/locations':'Ubicaciones', '/inventory':'Control de stocks', '/inventory/entry':'Entrada', '/inventory/exit':'Salida', '/inventory/stock':'Stock', '/inventory/manual':'Inventario', '/inventory/movements':'Movimientos', '/users':'Usuarios', '/map3d':'Mapa 3D' };
+  var routeTitles = { '/dashboard':'Dashboard', '/products':'Productos', '/locations':'Ubicaciones', '/inventory':'Control de stocks', '/inventory/entry':'Entrada', '/inventory/exit':'Salida', '/inventory/stock':'Stock', '/inventory/manual':'Inventario', '/inventory/movements':'Movimientos', '/users':'Usuarios', '/map3d':'Mapa 3D', '/material-requests':'Peticiones de material' };
   function updateBreadcrumb(path) {
     var bc = document.getElementById('breadcrumb'); if (!bc) return;
     var title = routeTitles[path] || 'Página';
