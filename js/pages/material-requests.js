@@ -171,6 +171,7 @@
         WMS.closeModal('processRequestModal');
         setTimeout(function() { document.getElementById('processRequestModal').remove(); }, 300);
         await renderPage(container);
+        if (WMS.updateMaterialRequestsBadge) WMS.updateMaterialRequestsBadge();
       } catch(e) {
         processBtn.disabled = false; processBtn.innerHTML = 'Confirmar y Dar Salida';
         WMS.showToast('Error al procesar: ' + e.message, 'error');

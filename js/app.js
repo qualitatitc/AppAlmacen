@@ -56,7 +56,7 @@
       + '<a href="#/inventory/exit" class="nav-item" data-path="/inventory/exit"><span class="nav-item-icon">📤</span> Nueva Salida</a>'
       + '<a href="#/inventory/movements" class="nav-item" data-path="/inventory/movements"><span class="nav-item-icon">🔄</span> Movimientos</a>'
       + '<a href="#/products" class="nav-item" data-path="/products"><span class="nav-item-icon">📦</span> Productos</a>'
-      + '<a href="#/material-requests" class="nav-item" data-path="/material-requests"><span class="nav-item-icon">📩</span> Peticiones de material</a>'
+      + '<a href="#/material-requests" class="nav-item" data-path="/material-requests" style="display:flex;align-items:center"><span class="nav-item-icon">📩</span> Peticiones de material <span id="sidebar-matreq-badge" class="badge" style="display:none;margin-left:auto;background:var(--danger);color:white;border-radius:10px;padding:2px 6px;font-size:0.7rem;font-weight:bold;">0</span></a>'
       + '</div>'
       + '<div class="nav-section"><div class="nav-section-title">Sistema</div><a href="#/users" class="nav-item" data-path="/users"><span class="nav-item-icon">👥</span> Usuarios</a></div>'
       + '</nav>'
@@ -99,7 +99,29 @@
         }, 500);
       });
     }
+
+    // Update Material Requests Badge
+    WMS.updateMaterialRequestsBadge();
   }
+
+  WMS.updateMaterialRequestsBadge = async function() {
+    if (!WMS.MaterialRequests) return;
+    try {
+      var reqs = await WMS.MaterialRequests.getAll();
+      var pendingCount = reqs.filter(function(r) { return r.estado === 'pendiente'; }).length;
+      var badge = document.getElementById('sidebar-matreq-badge');
+      if (badge) {
+        if (pendingCount > 0) {
+          badge.textContent = pendingCount;
+          badge.style.display = 'inline-block';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    } catch (e) {
+      console.warn('Could not update badge', e);
+    }
+  };
 
   function updateActiveNav(path) {
     document.querySelectorAll('.nav-item').forEach(function(item) {
@@ -107,6 +129,8 @@
       if (ip === path || (path.startsWith(ip) && ip !== '/dashboard')) item.classList.add('active');
       else item.classList.remove('active');
     });
+    // Update badge count whenever nagivation changes just in case
+    if (WMS.updateMaterialRequestsBadge) WMS.updateMaterialRequestsBadge();
   }
 
   var routeTitles = { '/dashboard':'Dashboard', '/products':'Productos', '/locations':'Ubicaciones', '/inventory':'Control de stocks', '/inventory/entry':'Entrada', '/inventory/exit':'Salida', '/inventory/stock':'Stock', '/inventory/manual':'Inventario', '/inventory/movements':'Movimientos', '/users':'Usuarios', '/map3d':'Mapa 3D', '/material-requests':'Peticiones de material' };
